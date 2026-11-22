@@ -28,6 +28,7 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # AGENTS.md: Guia de Desarrollo EpiForecast-MX
 
+> Espejo generado de `CLAUDE.md`: no editar aquí. Editar `CLAUDE.md` y correr `make sync-instrucciones`.
 
 ## Checkpoint vigente — lote alta_b44 publicado — 19/20-nov-2026
 
@@ -40,8 +41,10 @@ releases). Sesenta y seis nuevos por orden y decisiones nominales del autor: 15 
 (sha256 `819796694c1993e0012fc1cbb6dc489df2fdd3d4b0e43900f3af290c397468de`, con el consolidado previo de 86 `0f6252f9…`
 como prefijo byte a byte); los 152 en la semana fuente 2026-W44. **El paso siguiente usa la semana fuente 45 una sola
 vez para los 152.** Las 32 categorías restantes del boletín 44 están integradas **sin pronóstico** (radar «No
-modelable», `no_modelables.html`, EpiBot y RAG; frontend PR #103 `2d2c3ffe`). Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
+modelable», `no_modelables.html`, EpiBot y RAG; frontend PR #103 `2d2c3ffe`). El radar ofrece la opción «Pronóstico» para las 187 categorías (100 %): 154 con
+pronóstico publicado y 33 con pronóstico exploratorio, no validado (frontend PR #104 `7553966e`). Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
 `docs/C7_19_ALTA_B44.md`; evidencia fuera del repo en `planes/alta_b44_2026-11-19/`.
+
 
 ## Versión con control A51 y fuente 2026-W44
 
@@ -187,6 +190,121 @@ en curso, y diez controles estacionales no validados por autorización nominal d
 `ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`). Cierre del lote: backend
 `bca67a68` (CI verde), frontend `939e1d86` (versión servida comprobada por contenido). Cualquier otra cifra o
 base en secciones fechadas inferiores es historia.
+
+## Diez controles autorizados: meta de veinte alcanzada — 12-nov-2026
+
+El autor autorizó por nombre publicar el control estacional de diez rechazos de 2025 («Autorizar estos diez
+controles», `docs/alta20/AUTORIZACION_CONTROLES_10.md`): quemaduras, insuficiencia venosa periférica,
+hiperplasia de la próstata (sin sexo), escabiosis, protozoarios intestinales, faringitis estreptocócica,
+peatón lesionado, displasia cervical leve y moderada (sin sexo), varicela y parotiditis. Cada uno lleva
+`acceptance_fallback_run` con su run rechazado (commit `1e5602ce`, antes del refit), release con
+`acceptance_outcome: fallback_control` y gate con candidato igual al control: nunca validados ni PASS. Son
+cincuenta y cinco en el sitio y cincuenta y uno del runner (baseline 35/31): veinte nuevos = diez portafolios
+aceptados en la prueba de 2025 y diez controles no validados. Los otros cinco rechazos (displasia severa,
+salmonelosis, tifoidea, escarlatina, hepatitis C) siguen `configured`, sin control. Consolidado vigente de
+W42: `ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`), base de la semana
+siguiente. Evidencia fuera del repo: `planes/alta20_controles10_2026-11-12/` (SHA256SUMS).
+
+## Lote 17 con cinco motores: cinco más publicados — 12-nov-2026 (tarde)
+
+El autor autorizó por nombre la política `rolling_cv_baja_incidencia_v1` (cinco motores, sin ETS ni Ridge) para
+los 17 detenidos (`docs/alta20/AUTORIZACION_POLITICA_17.md`). Prueba única de 2025: intoxicación alimentaria
+bacteriana, shigelosis, erisipela, candidiasis urogenital y diabetes mellitus en el embarazo (sin sexo, 37
+productos) se aceptaron y están publicadas, 0/4 en curso; los otros doce rechazaron en el nacional y siguen
+`configured`, sin control. Son cuarenta y cinco en el sitio y cuarenta y uno del runner en la paridad. La meta de
+veinte nuevos no se alcanzó (diez en el día). Consolidado vigente de W42:
+`ingestion_observado_W43/candidato_con_alta20_lote17` (sha256 `036f4416…`). `dvc push` con el `dvc` de Homebrew
+(el del venv falla con botocore 1.43). Detalle en `docs/C7_15_ALTA20.md`, «Lote 17».
+
+## Lote alta20: cinco publicados, diecisiete detenidos — 12-nov-2026
+
+Orden del autor: incorporar al menos veinte padecimientos por el camino normal. Cinco superaron la prueba de
+2025 con `rolling_cv_v1` (siete motores) y están publicados, 0/4 en curso: otitis media aguda,
+conjuntivitis, amebiasis intestinal, accidente de transporte en vehículos con motor y edema, proteinuria y
+trastornos hipertensivos del embarazo (sin sexo, 37 productos). Son cuarenta en el sitio y treinta y seis del
+runner en la paridad. Quemaduras, insuficiencia venosa e hiperplasia de próstata rechazaron (nacional) y
+siguen `configured`; diecisiete más están detenidos porque ETS o Ridge fallan en series escasas y la política de
+baja incidencia es decisión del autor, no tomada (`docs/alta20/DECISIONES_PENDIENTES.md`). Consolidado
+vigente de W42: `ingestion_observado_W43/candidato_con_alta20` (sha256 `fce8f3bc…`). Detalle en
+`docs/C7_15_ALTA20.md`. El EpiBot pide precisar ante «otitis» o «amebiasis» a secas (abarcan más que el
+bloque) y no da cifras de los subtipos con código propio; segundo dictamen de Fable en
+`docs/alta20/DICTAMEN_FABLE_IMPLEMENTACION_2026-11-12.md`.
+
+## Sin boletín 44 y EPI con el radar — 10-nov-2026
+
+El índice oficial de gob.mx, consultado el 2026-11-11 04:44:58Z (22:44 del 10-nov en Ciudad de México),
+lista 43 boletines de 2026 y el último es `sem43.pdf`: no hay semana nueva, así que no se registró
+ninguna observación ni se tocó el consolidado (`candidato_con_neumonias` sigue siendo la base). El sitio
+servido coincidía con el frontend `main` en los 31 `vista.json` (corte W42), catálogo, punteros,
+`knowledge.json`, `news.json` y `assets/boletin/actual.json` (boletín 43). EPI ahora lee esa misma foto
+del radar y, para las categorías no modeladas, responde con las cifras impresas del cuadro y su
+estado, sin pronóstico (frontend PR #86, `epibot/js/radar_boletin.js`); los temas sensibles siguen en
+la respuesta de crisis. El commit del bot `69e761f3` (registro del 43, `[skip ci]`) no tenía CI propio.
+
+## Neumonías y bronconeumonías con el control — 10-nov-2026
+
+Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14) reprobó el gate de 2025 en el total
+nacional (sMAPE 18.0 frente a 13.4 del control) y está publicada con el control por orden del autor, nunca
+como validada. El bloque pasa del Cuadro 5.1 al 5.2 en 2024_sem07 con el mismo ancho: el grupo de cuadro
+declara `periodos`. Consolidado vigente de W42: `ingestion_observado_W43/candidato_con_neumonias`
+(sha256 `3e3cf0fd…`), base de la semana siguiente. Son treinta y un padecimientos del runner en la paridad
+semanal. Detalle en `docs/C7_14_NEUMONIAS.md`.
+
+## Boletín 43 integrado — 9-nov-2026
+
+Primer paso semanal de punta a punta con un boletín real (`sem43.pdf`, sha256 `f24aea93…842f3c8a`,
+disponible en gob.mx desde 2026-11-09 18:53:35 UTC). Los cuatro legacy avanzan al boletín 43 con el
+productor v5 y los 30 del runner registran la observación 2026-W42: Obesidad PASS 4/4 y los otros 29 a
+1/4, sin ningún FAIL. Para Asma esa disponibilidad es anterior a su emisión
+(`after_emission.first_available: false`). Consolidado vigente:
+`ingestion_observado_W43/candidato_completo` (sha256 `be9883bc…`, paridad PASS para los 34), que sustituye
+a `candidato_con_asma` como base de la semana siguiente. Covid-19: emisión `2026-W43.json`.
+
+## Asma publicada — 9-nov-2026
+
+Asma (J45, J46) superó el gate de 2025 con `rolling_cv_baja_incidencia_v1`, política que eligió el autor
+tras el fallo cerrado de ETS en dos ajustes de Tlaxcala (asma no es de baja incidencia; Ridge quedó fuera
+sin fallar). Publicada desde `asma_j45_release_28da01ab0b42`, 0/4 en curso. El boletín 43 (W42) ya era
+público al emitir: W42 no es prospectiva respecto de la información y ninguna superficie lo afirma.
+Detalle en `docs/C7_13_ASMA.md`. Son treinta padecimientos del runner en la paridad semanal; el
+consolidado vigente de W42 es `candidato_con_asma`.
+
+## Cánceres: mama con el control y cuello del útero — 8-nov-2026
+
+Tumor maligno de la mama (C50) reprobó el gate de 2025 y está publicado con el control por orden
+del autor, nunca como validado. Cuello del útero (C53) superó el gate y es el primer padecimiento
+sin desglose por sexo (`sex_breakdown: false`: 32 bases «general», 37 productos). Los otros 15
+cánceres sólo tienen datos desde 2023: con la política `rolling_cv_historia_corta_2023_v1` (desarrollo
+2025, prueba 2026-W01..W41) 10 aceptan y están publicados; los 5 rechazados están publicados con el
+control por orden del autor, nunca como validados.
+El 9-nov-2026 nueve de ellos se reevaluaron con la verdad
+de 2026 recuperada (sin filas imputadas): ningún veredicto cambió y sus releases se reemplazaron.
+Detalle en `docs/C7_12_CANCER.md`. Son veintinueve padecimientos
+del runner en la paridad semanal.
+
+## Radar del boletín 42 — 8-nov-2026
+
+Infecciones intestinales por otros organismos (A04, A08-A09), infección de vías urinarias y úlceras,
+gastritis y duodenitis superaron el gate de 2025 y están publicadas, 0/4 en curso. IRA y gingivitis lo
+reprobaron y están publicadas con el control por orden expresa del autor, nunca como validadas
+(`CONTROL_ONLY` al completar). Detalle en `docs/C7_11_RADAR_W42.md`. Son doce padecimientos del runner en
+la paridad semanal.
+
+## Cardiovasculares publicadas — 7-nov-2026
+
+Hipertensión arterial, enfermedad isquémica y cerebrovascular están publicadas; detalle en
+`docs/C7_10_CARDIOVASCULARES.md`. Sólo hipertensión superó el gate de 2025; las otras dos son el
+control, con la confirmación expresa del autor, nunca validadas. Entran en la paridad semanal con
+los otros ocho.
+
+## F50 publicada con el control — 6-nov-2026
+
+Anorexia, bulimia y otros trastornos alimentarios (F50) está publicada desde
+`anorexia_f50_release_173404ea4ef0` con el control `seasonal_naive_lag52`: el gate de 2025 rechazó el
+portafolio y el autor autorizó esa caída (`acceptance_fallback_run`). Nunca presentarlo como aceptado
+ni como validado: la comparación prospectiva sería contra sí mismo (`CONTROL_ONLY`). Covid-19 no es
+padecimiento modelado: va en `rechazados.html` como foto fija, `trained` y sin canales, sin paso
+semanal. Detalle en `docs/C7_9_F50_COVID_RECHAZADOS.md`.
 
 ## Diabetes publicada y árboles integrados — 5-nov-2026
 
@@ -812,7 +930,7 @@ EpiForecast-MX/
   `disease_id=anorexia_f50` en todo artefacto y
   mismo `run_id`+digests en otro `runs_root`. **Sin umbral de sMAPE**: C6 demuestra reutilización
   funcional, no calidad productiva (la mediana sale ~93, esperable en series casi-cero).
-- **Preservación verificada**: el diff de C6 toca `config/`, `tests/` y `AGENTS.md` (documentación) —
+- **Preservación verificada**: el diff de C6 toca `config/`, `tests/` y `CLAUDE.md` (documentación) —
   cero cambios en `src/`, `scripts/`, frontend y `rolling_cv_v1.yaml` (digest `dd6d4a02…` intacto);
   los 4 agregados legacy
   byte-idénticos; runs canónicos C5 de Obesidad intactos; estado dirigido de DVC sin cambios.

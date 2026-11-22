@@ -26,7 +26,24 @@ que terminaban dejando el checkout en una rama de trabajo.
 - La sincronización no autoriza reentrenar, reabrir 2025, cambiar criterios de
   aceptación, publicar otro padecimiento ni modificar artefactos sellados.
 
-# GEMINI.md — Contexto operativo de EpiForecast-MX
+# GEMINI.md: Guia de Desarrollo EpiForecast-MX
+
+> Espejo generado de `CLAUDE.md`: no editar aquí. Editar `CLAUDE.md` y correr `make sync-instrucciones`.
+
+## Checkpoint vigente — lote alta_b44 publicado — 19/20-nov-2026
+
+Prevalece sobre todas las secciones inferiores (incluida «Versión con control A51») en conteos y base semanal.
+Publicados y medidos en producción servida: **152 en el sitio y 148 del runner** (backend `main` `bdfd03bb`, PR #79,
+CI 44667657252 verde; frontend `main` `4a9fdba1`, PR #102, `publication/catalog.json` servido byte-idéntico, 148
+releases). Sesenta y seis nuevos por orden y decisiones nominales del autor: 15 aceptados en su prueba única de 2025
+(0/4), 41 controles estacionales no validados tras rechazo y 10 controles por construcción
+(`rolling_cv_historia_corta_2024_v1`). Base semanal: `planes/alta_b44_2026-11-19/consolidado_W44/dataset_boletin_epidemiologico.csv`
+(sha256 `819796694c1993e0012fc1cbb6dc489df2fdd3d4b0e43900f3af290c397468de`, con el consolidado previo de 86 `0f6252f9…`
+como prefijo byte a byte); los 152 en la semana fuente 2026-W44. **El paso siguiente usa la semana fuente 45 una sola
+vez para los 152.** Las 32 categorías restantes del boletín 44 están integradas **sin pronóstico** (radar «No
+modelable», `no_modelables.html`, EpiBot y RAG; frontend PR #103 `2d2c3ffe`). El radar ofrece la opción «Pronóstico» para las 187 categorías (100 %): 154 con
+pronóstico publicado y 33 con pronóstico exploratorio, no validado (frontend PR #104 `7553966e`). Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
+`docs/C7_19_ALTA_B44.md`; evidencia fuera del repo en `planes/alta_b44_2026-11-19/`.
 
 
 ## Versión con control A51 y fuente 2026-W44
@@ -46,127 +63,282 @@ Esta versión incorpora —como **versión candidata** previa al despliegue efec
 - **Auditoría `fable` y `D1`:** Recomputación CSV con diferencia `0` (`47` archivos, `24` SHA). Cinco motores cubrieron con pronósticos las `53` semanas MMWR de `test_2025`; `horizon=52` en `job_context` es contexto y **no truncó la evaluación** (el forecast futuro de 52 semanas sigue sin ejecutarse). `D1` retrospectiva no ciega (total 2025 visible antes). Riesgos: sexo, errata `2015`, imputados `2016`, `12` headers raster.
 - **Gobernanza y evidencia:** Autorización sólo para test, sin autorizaciones heredadas (`fable` no autoriza control). Nueva pregunta nominal de ROOT sobre `seasonal_naive_lag52` **sin respuesta al corte**; prohibidos `refit`, `forecast`, `control`, publicación, `retest` 2025, reselección, cambio de criterios y exportar baselines privados. Evidencia: `planes/piloto_carbon_alta1_2026-11-15/test2025_autorizado_20261116/RESULTADO_TEST2025.json` y `planes/piloto_carbon_alta1_2026-11-15/test2025_autorizado_20261116/fable_posttest/FABLE_POSTTEST.json` (`.md`).
 
-## Checkpoint operativo vigente — publicados al 15-nov-2026 (85/81), guardas `480a0347`, desarrollo `policy5` (`8bbb72da`) y piloto Carbon — 16-nov-2026
+## Checkpoint desarrollo policy5 (`8bbb72da`) y post-merge PR #74/#75 — piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0/1) — 16-nov-2026
 
-**Prevalece sobre las secciones inferiores de este archivo.** La fuente autoritativa de checkpoints
-vigentes del repositorio está en `AGENTS.md` y `CLAUDE.md`; las secciones inferiores de `GEMINI.md`
-(`Continuidad OnePlus — 20-sep-2026`, `Salida de sesión WCP — 9-sep-2026`, `P1 W33`, etc.) son
-**historia de otros carriles** y no deben ejecutarse como instrucciones actuales.
+Complementa sin reemplazar el checkpoint de `alta20c` inferior: producción servida conserva **85 publicados en el
+sitio y 81 del runner** sobre la misma base semanal
+`planes/alta20c_2026-11-14/ingestion_observado_W43/candidato_con_alta20c_final20/dataset_boletin_epidemiologico.csv`
+(sha256 `8c21883a3a1d5e1b4daeabe1f5e3ab27f931f1f0177b74fd78fb696e8ad88852`, verificado en
+`ROOT_WEEKLY_PATHS_ACTUAL.json`), con `main` frontend en `73079eeb` (auditoría documental `#99` del 15-nov, sin
+cambios por el piloto), catálogo servido HTTP 200 byte-idéntico, las `97` entradas previas de
+`config/padecimientos.yaml` iguales y `0` artefactos antiguos modificados. PR `#74` de integración exclusivamente
+técnica (`TECHNICAL_ONLY_PR74`, `delta = 0` publicados; guardas idempotentes de dataset `0444` y de `policy_digest`
+en selección) quedó fusionada en `main` backend `919159e8b0856aa3e59866715cd7063ffa070e63` (desde `7b42e4d8` sobre
+`30cb7b4f`, con aprobación final independiente de Fable `FABLE_FINAL_APPROVED_TECHNICAL_ONLY` y CI remoto de PR
+`43902888808` en `SUCCESS`), con **CI remoto de `main` `43905851850` en verde** (`SUCCESS`: `2,874 passed,
+496 skipped, 66 deselected`), seguida de PR `#75` documental en `main` backend
+`d46effa6e754ef5a98abd70c52968a8d3ac664db` (CI remoto de `main` `43917609205` en `SUCCESS`), `119` artefactos
+científicos materializados por hash en el checkout principal y respaldos previos verificados por hash; asimismo, la
+revisión `v3` del skill `padecimiento-epiforecast` (`6` archivos aprobados en
+`fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json`) y el ajuste documental de
+`1` línea sobre la fuente del rezago en `references/paso_semanal.md` (`75886c87…`, `ROOT_SKILL_INSTALACION_LAG.json`,
+revisión de lectura `FABLE_LAG_SOURCE.json`) quedaron instalados con copia canónica y espejo idénticos (`diff = 0`,
+`quick_validate` `rc=0`; las sondas focales se registran por versión evaluada y no constituyen suite nativa completa
+ni `PASS` científico). Sobre los pines científicos `98675bb0` (extracción doble canónica `raw` `7fc521b7…`) y
+`373ea5f6` (dataset `sifilis_adquirida_a51_0cc942faddb8`, QA y corridas; **no requirieron repetir la extracción ni
+reescribir manifiestos** por los cambios de guardas, comentarios o documentación ya integrados —ni por avances de
+`HEAD` o HTML web— que no alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente
+o `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas consumidas),
+`smoke` de 7 motores (`f7bc088ceb95`) terminó `succeeded` (`7/7`) y `full` de 7 motores (`0419b6adfda7`) terminó
+`FAILED` (`5` estacionales `succeeded`; primeros fallos observados en `2021`: `ETS` en `01` hombres y `Ridge` en `17`
+mujeres). Ante la propuesta nominal `v2` (`a4d0544d…`; coste descriptivo en `development_2024`: `ETS` o `Ridge`
+superan en `> 5 %` de sMAPE al mejor estacional en `38/64` bases), el autor respondió directamente **`«si autorizo»`**
+(`carbon_policy5_authorized/AUTORIZACION_AUTOR.json`, sha256 `da3b72f4…`; autoridad directa del autor, sin heredar
+delegaciones de `alta20c`), autorizando **únicamente el desarrollo `smoke5`, `full5` y `select5`** bajo
+`rolling_cv_baja_incidencia_v1` (`6d2350be…`; el nombre de la política no acredita baja incidencia nacional
+—`9,523..17,854` casos anuales en `2021–2024`— y `sifilis_adquirida_a51` conserva `profile: aguda_conteos`). **No
+están autorizados por esta respuesta `test` de 2025, `refit`, `forecast`, control estacional de respaldo ni
+publicación.** En el commit fuente científico `8bbb72da8faffbdf0319f6c721618a3989f87af7` (`1` línea en
+`config/padecimientos.yaml:3172` sobre `d46effa6`, mantenido fijo en su worktree científico; dictamen Fable de fuente y
+alcance `FUENTE_Y_ALCANCE_CONFORMES_CON_1_ERROR_REAL_NO_CIENTIFICO` en `fable_policy5_source_8bbb/FABLE_POLICY5_SOURCE.{json,md}`,
+`0` bloqueantes para el desarrollo y remedio técnico separado de `1` línea para `E1` en
+`tests/unit/test_piloto_carbon_alta1_validator.py:227` —ya medido `1 failed` antes en `jobs/test_E1_before_8bbb` y
+`1 passed` después en `jobs/test_E1_after_policy5`, `ccf5fddd…`, ya con commit técnico E1 `75152360b105af196079d9e954d22143e3a429cf` en `worktrees/policy5_integration`—),
+se verificaron idénticos los **`4` digests autorizados** de `sifilis_adquirida_a51_0cc942faddb8`, se respaldaron `102`
+archivos y se materializaron los `91` archivos nuevos de corrida en el checkout principal sin sobrescribir contextos
+previos, y terminaron **`succeeded`** las tres etapas de desarrollo
+(`carbon_policy5_authorized/ROOT_RESULTADOS_SELECT5_VERIFICADOS.json`, estado
+`DEVELOPMENT_COMPLETED_NOT_ACCEPTANCE`, **no es aceptación ni `PASS` científico**): `smoke5`
+`sifilis_adquirida_a51_benchmark_smoke_b2b6e5bc21ba` (manifiesto `376d0843…`, `20` artefactos), `full5`
+`sifilis_adquirida_a51_benchmark_full_57698d37e134` (manifiesto `b1f3d41b…`, `20` artefactos en
+`development_2021..2024`) y `select5` `sifilis_adquirida_a51_select_57698d37e134_b41ca5664941` (manifiesto
+`708f2e70…`, `selection_digest` `73490ea8…`, `4` artefactos, **`64` series base seleccionadas**:
+`seasonal_mean_3y=22`, `seasonal_median_5y=16`, `seasonal_naive_lag52=13`, `seasonal_mean_5y=10`,
+`seasonal_median_3y=3`; portafolio de desarrollo `smape_nacional_general=51.97`, `smape_all=78.21`,
+`smape_bases=85.56`, `mase_all=1.558`, `mase_bases=1.470`). Fable completó la revisión pretest independiente
+(`fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}`, `a3f61df2…` / `3232dd9e…`) con dictamen
+**`CONDICIONAL`** (`0` defectos técnicos, `0` pruebas previas de `A51`; **no es aceptación de 2025 ni `PASS`**): en
+desarrollo `2021–2024` el portafolio mejora al control `seasonal_naive_lag52` en bases (`−9.98 %`) y `111` productos
+(`−9.19 %`), pero es **`+50.05 %` peor en nacional General (`51.97` vs `34.63`, límite `10 %`, fuera en `3/4`
+pliegues)**, en un contexto de cambio de nivel `2021–2023`; registra además `D1` (nivel anual público de `2025` visible en
+`QA_COMPLETA.md` §3 —no es evaluación ciega al nivel anual, aunque la selección usó sólo métricas de desarrollo
+`2021–2024`—) y las divulgaciones obligatorias previas a cualquier eventual publicación (`K6`). **El piloto permanece en
+`0 / 1` publicado (`lifecycle: configured`) con `0` pruebas de 2025 abiertas o consumidas**, y se envió una **nueva
+pregunta nominal al autor para abrir 2025** (`carbon_policy5_authorized/ROOT_TEST2025_QUESTION_SENT.json`, propuesta
+`485075c5…`, **actualmente `PENDING` sin respuesta**, distinta de `«si autorizo»`): antes de abrir 2025 se exigen
+`K1–K5` (nueva autorización del autor + compuerta `root` fijando `8bbb72da`, los `4` digests de `0cc942faddb8`,
+política `6d2350be…`, `select5` `73490ea8…` y `D1`), quedando fijado que un rechazo en 2025 deja `configured` (`0/1`)
+con la prueba única consumida y sin control de respaldo, `refit` ni retest. Guía: `docs/C7_18_PILOTO_CARBON.md`;
+evidencia externa: `planes/piloto_carbon_alta1_2026-11-15/`.
 
-- **Sitio y paso semanal vigentes (`docs/C7_17_ALTA20C.md`):** al corte del 15-nov-2026 hay **85
-  padecimientos publicados** en el sitio (**4** legacy + **81** releases del runner; la lista vigente
-  sale siempre de `registry.published_members()` / `registry.release_published()`, no de un número fijo),
-  alineados en la semana **fuente** `2026-W43` (`ingestion_observado_W43/candidato_con_alta20c_final20`,
-  sha256 `8c21883a…`). En cada paso semanal, `scripts/paso_semanal.py` (`make semana-revisa`,
-  `make semana-observa`, `python -m scripts.paso_semanal consolida` y `make semana-vistas`) mueve los
-  releases del runner (`registry.release_published()`, calculando el periodo objetivo una sola vez con
-  `epi_calendar.target_period`), el productor v5 mueve los 4 legacy, y `revisa_consolidado` exige
-  paridad global sobre todos los `registry.published_members()`, deteniendo la publicación del lote
-  entero ante cualquier `FAIL` sin omitir publicados previos.
-- **Guardas técnicas y PR `#74` / `#75` al 16-nov-2026 (`docs/C7_18_PILOTO_CARBON.md`, `delta = 0` publicados):**
-  sobre `373ea5f6` (guarda SRP de los 6 artefactos del builder + lector QA; dictamen de Fable
-  `APTO_TECNICO_FOCAL_IO_QA_373_CON_OBSERVACIONES_MENORES` con accesos de Fable y Opus restablecidos
-  `rc=0`), se integraron en `480a034704c45ac9c65a2e45d7dee853eabfd20a` la documentación semanal `v2`
-  (`52007772`), la guarda `C1` de `policy_digest` en `orchestrator.run_selection` (`757f1e7d`, `81/81`
-  publicados `MATCH`) y los ajustes `R1–R3` (`480a0347`; `118` pytest + Ruff/format/mypy `0`, y suite
-  **local** `2,879 passed, 491 skipped, 66 deselected`, `rc=0`, no CI remoto; no se corrió nueva QA
-  completa con la traza `R3`). Fable emitió sobre `480a0347` el dictamen
-  **`APTO_TECNICO_FOCAL_C1_R123_480_CON_OBSERVACIONES_MENORES`** (sin bloqueantes; `D1–D3` resueltos,
-  con ajuste sólo de comentario en `config/padecimientos.yaml` y `tests/unit/test_registry.py` sin
-  cambio semántico YAML/AST).
-  - *Nota post-merge de PR `#74` y PR `#75` (16-nov-2026, `TECHNICAL_ONLY_PR74`, `delta = 0` publicados):*
-    cumplidas las condiciones procedimentales sobre el `HEAD` exacto `7b42e4d893588239380b32debfb2da711aa88e31`
-    (aprobación final independiente de Fable `FABLE_FINAL_APPROVED_TECHNICAL_ONLY` y CI remoto de PR
-    `43902888808` en `SUCCESS`), PR `#74` quedó fusionada en `main` backend
-    `919159e8b0856aa3e59866715cd7063ffa070e63` con **CI remoto de `main` `43905851850` en `SUCCESS`**
-    (`2,874 passed, 496 skipped, 66 deselected`, `integracion_tecnica_480/CI_MAIN_919_FINAL.json`),
-    seguida de PR `#75` documental en `main` backend `d46effa6e754ef5a98abd70c52968a8d3ac664db` con **CI
-    remoto de `main` `43917609205` en `SUCCESS`**. Se conservan `main` frontend `73079eeb` sin cambios,
-    producción servida `85/81` (catálogo byte-idéntico y base semanal
-    `8c21883a3a1d5e1b4daeabe1f5e3ab27f931f1f0177b74fd78fb696e8ad88852` verificada en
-    `ROOT_WEEKLY_PATHS_ACTUAL.json`), las `97` entradas previas del registry, los `119` artefactos
-    científicos materializados por hash en el checkout principal con respaldos previos verificados, los pines
-    científicos `98675bb0` / `373ea5f6` (no requirieron repetir la extracción ni reescribir manifiestos por
-    los cambios de guardas, comentarios o documentación ya integrados —ni por avances de `HEAD` o HTML web—
-    que no alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente o
-    `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas
-    consumidas), la revisión `v3` del skill `padecimiento-epiforecast`
-    (`fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json`) y el ajuste
-    de `1` línea sobre la fuente del rezago en `references/paso_semanal.md` (`75886c87…`,
-    `ROOT_SKILL_INSTALACION_LAG.json`, `diff = 0`, `quick_validate` `rc=0`; sondas focales registradas por
-    versión evaluada, sin equivaler a suite nativa completa ni `PASS` científico). **El piloto permanece
-    incompleto en el plano científico** (`0 / 1` publicado, `lifecycle: configured`, `0` pruebas de 2025;
-    véase abajo el desarrollo `smoke5`/`full5`/`select5` completado en `8bbb72da` sin aceptación ni `PASS`).
-- **Piloto Carbon (`sifilis_adquirida_a51`) — al 16-nov-2026 `0 / 1` publicado (`lifecycle: configured`, 0 pruebas de 2025):**
-  - *Historia científica medida en `373ea5f6` (8 fuentes de extracción byte-iguales hasta `480a0347` y
-    cambio ulterior sólo de comentario en `padecimientos.yaml` con 7/8 byte-iguales, preservando sin
-    reextracción ni retroedición `raw` `7fc521b7…` y `sifilis_adquirida_a51_0cc942faddb8`):*
-    `QA_FINAL_373ea5f6` (`667` `TOTAL` coincidentes + `1` errata real en `2015_sem40.pdf`
-    `Acumulado_hombres`), `smoke` de 7 motores `sifilis_adquirida_a51_benchmark_smoke_f7bc088ceb95`
-    (`7/7 succeeded`), y **`full` de 7 motores `sifilis_adquirida_a51_benchmark_full_0419b6adfda7`
-    `FAILED`** (`5` estacionales `succeeded`; primeros fallos observados en `2021`: `ETS` `01` hombres
-    negativo `-0.0715996`/`-0.071725` y `Ridge` `17` mujeres sin conteos utilizables).
-  - *Autorización acotada («si autorizo») y resultados reales de desarrollo sobre `8bbb72da`
-    (`DEVELOPMENT_COMPLETED_NOT_ACCEPTANCE`, **no es aceptación ni `PASS` científico**):* sobre la propuesta
-    nominal `v2` (`a4d0544d…`, con alcance `C2`, coste descriptivo `38/64` bases con mejora `> 5 %` sobre el
-    mejor de los 5 estacionales en `development_2024` `C3`, hipótesis acotada al primer fallo `C4` y
-    corrección `C5`), el autor respondió directamente **`«si autorizo»`**
-    (`carbon_policy5_authorized/AUTORIZACION_AUTOR.json`, sha256 `da3b72f4…`; sin delegación de `alta20c`),
-    autorizando **únicamente `smoke5`, `full5` y `select5`** con `rolling_cv_baja_incidencia_v1`
-    (`6d2350be…`; el nombre de la política no implica baja incidencia nacional —`9,523..17,854` casos anuales
-    en `2021–2024`— y se conserva `profile: aguda_conteos`). **Siguen NO autorizados por esta respuesta `test`
-    de 2025, `refit`, `forecast`, control estacional de respaldo y publicación.** En el commit fuente
-    científico `8bbb72da8faffbdf0319f6c721618a3989f87af7` (`1` línea en `config/padecimientos.yaml:3172`
-    sobre `d46effa6`, fijo en su worktree científico; dictamen Fable
-    `FUENTE_Y_ALCANCE_CONFORMES_CON_1_ERROR_REAL_NO_CIENTIFICO` en
-    `fable_policy5_source_8bbb/FABLE_POLICY5_SOURCE.{json,md}` y remedio técnico separado de `1` línea para
-    `E1` en `tests/unit/test_piloto_carbon_alta1_validator.py:227`, ya medido `1 failed` antes en
-    `jobs/test_E1_before_8bbb` y `1 passed` después en `jobs/test_E1_after_policy5` `ccf5fddd…`, ya con commit técnico E1 `75152360b105af196079d9e954d22143e3a429cf` en `worktrees/policy5_integration`), los **`4` digests autorizados** de
-    `sifilis_adquirida_a51_0cc942faddb8` se reprodujeron idénticos, se respaldaron `102` archivos y se
-    materializaron los `91` archivos nuevos de corrida en el checkout principal sin sobrescribir contextos
-    previos, y terminaron **`succeeded`** las tres etapas
-    (`carbon_policy5_authorized/ROOT_RESULTADOS_SELECT5_VERIFICADOS.json`): `smoke5`
-    `sifilis_adquirida_a51_benchmark_smoke_b2b6e5bc21ba` (manifiesto `376d0843…`, `20` artefactos), `full5`
-    `sifilis_adquirida_a51_benchmark_full_57698d37e134` (manifiesto `b1f3d41b…`, `20` artefactos en
-    `development_2021..2024`) y `select5` `sifilis_adquirida_a51_select_57698d37e134_b41ca5664941`
-    (manifiesto `708f2e70…`, `selection_digest` `73490ea8…`, `4` artefactos, **`64` series seleccionadas**:
-    `seasonal_mean_3y=22`, `seasonal_median_5y=16`, `seasonal_naive_lag52=13`, `seasonal_mean_5y=10`,
-    `seasonal_median_3y=3`; desarrollo `smape_nacional_general=51.97`, `smape_all=78.21`,
-    `smape_bases=85.56`, `mase_all=1.558`, `mase_bases=1.470`).
-  - *Dictamen pretest de Fable completado (`CONDICIONAL`, no pendiente de revisión) y decisión del autor
-    sobre `2025` `PENDING`:* en `fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}` (`a3f61df2…` /
-    `3232dd9e…`), Fable emitió **`CONDICIONAL`** (`0` defectos técnicos, `0` pruebas previas de `A51`; **no
-    es aceptación de 2025 ni `PASS`**): en desarrollo `2021–2024` el portafolio mejora al control
-    `seasonal_naive_lag52` en bases (`−9.98 %`) y `111` productos (`−9.19 %`), pero es **`+50.05 %` peor en
-    nacional General (`51.97` vs `34.63`, límite `10 %`, fuera en `3/4` pliegues)**; registra además `D1`
-    (nivel anual público de `2025` visible en `QA_COMPLETA.md` §3 —no es evaluación ciega al nivel anual,
-    aunque la selección usó sólo métricas de desarrollo—) y las divulgaciones obligatorias `K6` previas a
-    cualquier eventual publicación. Se envió una **nueva pregunta nominal al autor para abrir `2025`**
-    (`carbon_policy5_authorized/ROOT_TEST2025_QUESTION_SENT.json`, propuesta `485075c5…`, **pendiente sin
-    respuesta**, distinta de `«si autorizo»`): abrir `2025` exige cumplir `K1–K5` (nueva autorización del
-    autor + compuerta `root` fijando `8bbb72da`, los `4` digests de `0cc942faddb8`, política `6d2350be…`,
-    `select5` `73490ea8…` y `D1`), y un rechazo en `2025` deja `configured` (`0/1`) con la prueba única
-    consumida y sin control de respaldo, `refit` ni retest.
+## Checkpoint vigente — lote alta20c publicado — 15-nov-2026
+
+Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
+Publicados y medidos en producción servida: 85 en el sitio y 81 del runner (main backend `f63490f7`, CI verde;
+main frontend `f065b839`, Netlify `6af9d133`). Veinte nuevos con alta20c: tres portafolios aceptados en su prueba
+única de 2025 (fiebre paratifoidea, mal del pinto y vulvovaginitis; validación prospectiva `INCOMPLETE` 0/4) y
+diecisiete controles estacionales no validados: doce base (los siete reutilizables con la selección congelada de
+alta10b, que abrieron y rechazaron su prueba de 2025 en esta tanda, y los cinco rechazos de alta10b) y cinco
+rechazos nuevos de alta20c. Las decisiones de gobierno las tomó Fable por delegación literal del autor del 15-nov
+(«todo lo pendiente preguntarte a fable y él decide…»): son dictámenes delegados, no firmas humanas ni certificación
+científica. Siete rechazos de la tanda quedan `configured` fuera de cupo; influenza y febril exantemática bloqueadas
+(Sem «-1» en 2025). Base semanal: `ingestion_observado_W43/candidato_con_alta20c_final20` (sha256 `8c21883a…`), con
+los 85 en la semana **fuente** 2026-W43 (boletín 43); el último objetivo depende del rezago de cada id: W42 con
+rezago 1 y W43 con rezago 0 (síndrome coqueluchoide y tos ferina). El paso siguiente usa la semana fuente 44 una sola
+vez para todos. Guía: `docs/C7_17_ALTA20C.md`; cierre y evidencia fuera del repo:
+`planes/alta20c_2026-11-14/CIERRE_ALTA20C.md`. Pendiente de mantenimiento, no bloqueante ni ejecutado: O1 a O3 de la
+revisión final (`docs/DEUDAS_VIGENTES.md`).
+
+## Checkpoint — lote alta10b publicado — 12-nov-2026
+
+Historia (superada por alta20c). Publicados: 65 en el sitio y 61 del runner (diez nuevos con alta10b: cuatro aceptados en su prueba única de
+2025 con cinco motores, ascariasis, hepatitis vírica A, efectos del calor y de la luz y otras hepatitis
+víricas, 0/4 en curso; y seis controles estacionales no validados por autorización A6, desnutrición leve,
+otras salmonelosis, fiebre tifoidea, escarlatina, hepatitis vírica C y displasia severa sin sexo). Los
+dieciséis candidatos llegaron a selección congelada; en orden fijo y con tope de cuatro se abrieron nueve
+pruebas de 2025: cuatro aceptadas, cinco rechazadas (quedan `configured` sin control) y siete sin abrir. Ningún rechazo futuro tenía entonces control autorizado (después, alta20c publicó con control los cinco rechazos
+de alta10b por dictamen delegado). Base semanal de entonces (fuente W43):
+`ingestion_observado_W43/candidato_con_alta10b` (sha256 `be7abfa5…`). Guía: `docs/C7_16_ALTA10B.md`.
+
+## Checkpoint — alta10b en publicación — 12/13-nov-2026
+
+Historia. El autor autorizó A6 (seis controles con su run exacto), B2 y B14
+(cinco motores para dieciséis candidatos): `docs/alta10b/AUTORIZACION_A6_B2_B14.md`. Fase de publicación en
+curso en la rama `codex/alta10b-publicacion`; meta: diez nuevos (55 → 65 en el sitio, 51 → 61 del runner).
+Hasta que se publiquen, siguen 55/51. Ningún rechazo futuro tiene control autorizado.
+
+## Checkpoint — lote alta10b en preparación, 0 publicados — 12-nov-2026
+
+Historia (superada por la publicación de alta10b y luego alta20c). Publicados entonces: seguían 55 en el sitio y 51 del runner. La
+orden de incorporar diez más (alta10b) está abierta y **no completada**: se integró sólo código del
+extractor, once altas `configured`, pruebas y documentación (`docs/C7_16_ALTA10B.md`). Desnutrición leve
+rechazó su prueba única de 2025 en el total nacional y queda `configured` sin control; los otros dieciséis
+candidatos tienen raw canónico revalidado y smoke de siete motores fallido sólo por ETS y Ridge, así que
+ninguno avanza con `rolling_cv_v1`. Hasta el 12-nov por la noche estaban pendientes A6, B2 y B14; el autor los
+autorizó en el chat (ver la sección superior y `docs/alta10b/AUTORIZACION_A6_B2_B14.md`). La autorización
+vale por la respuesta del autor; root la registra como JSON con el esquema de
+`docs/alta10b/ESQUEMA_AUTORIZACION.md` para las herramientas, sin crear ni revocar permisos. Los datos
+agregados de la tanda también están autorizados. No reabrir la prueba de leve ni los cinco antiguos. Evidencia en `planes/alta10b_2026-11-12/`.
+
+## Checkpoint — lote alta20 cerrado — 12-nov-2026
+
+Historia (superada por alta10b y alta20c); en su momento prevalecía sobre las secciones inferiores.
+Publicados: 55 en el sitio y 51 del runner (veinte nuevos el 12-nov: diez aceptados en la prueba de 2025, 0/4
+en curso, y diez controles estacionales no validados por autorización nominal del autor). Fuente de verdad:
+`config/padecimientos.yaml` (lifecycle) y `publication/catalog.json` del frontend; guía
+`docs/C7_15_ALTA20.md`; decisiones pendientes en `docs/alta20/DECISIONES_PENDIENTES.md`. Base semanal de W42:
+`ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`). Cierre del lote: backend
+`bca67a68` (CI verde), frontend `939e1d86` (versión servida comprobada por contenido). Cualquier otra cifra o
+base en secciones fechadas inferiores es historia.
+
+## Diez controles autorizados: meta de veinte alcanzada — 12-nov-2026
+
+El autor autorizó por nombre publicar el control estacional de diez rechazos de 2025 («Autorizar estos diez
+controles», `docs/alta20/AUTORIZACION_CONTROLES_10.md`): quemaduras, insuficiencia venosa periférica,
+hiperplasia de la próstata (sin sexo), escabiosis, protozoarios intestinales, faringitis estreptocócica,
+peatón lesionado, displasia cervical leve y moderada (sin sexo), varicela y parotiditis. Cada uno lleva
+`acceptance_fallback_run` con su run rechazado (commit `1e5602ce`, antes del refit), release con
+`acceptance_outcome: fallback_control` y gate con candidato igual al control: nunca validados ni PASS. Son
+cincuenta y cinco en el sitio y cincuenta y uno del runner (baseline 35/31): veinte nuevos = diez portafolios
+aceptados en la prueba de 2025 y diez controles no validados. Los otros cinco rechazos (displasia severa,
+salmonelosis, tifoidea, escarlatina, hepatitis C) siguen `configured`, sin control. Consolidado vigente de
+W42: `ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`), base de la semana
+siguiente. Evidencia fuera del repo: `planes/alta20_controles10_2026-11-12/` (SHA256SUMS).
+
+## Lote 17 con cinco motores: cinco más publicados — 12-nov-2026 (tarde)
+
+El autor autorizó por nombre la política `rolling_cv_baja_incidencia_v1` (cinco motores, sin ETS ni Ridge) para
+los 17 detenidos (`docs/alta20/AUTORIZACION_POLITICA_17.md`). Prueba única de 2025: intoxicación alimentaria
+bacteriana, shigelosis, erisipela, candidiasis urogenital y diabetes mellitus en el embarazo (sin sexo, 37
+productos) se aceptaron y están publicadas, 0/4 en curso; los otros doce rechazaron en el nacional y siguen
+`configured`, sin control. Son cuarenta y cinco en el sitio y cuarenta y uno del runner en la paridad. La meta de
+veinte nuevos no se alcanzó (diez en el día). Consolidado vigente de W42:
+`ingestion_observado_W43/candidato_con_alta20_lote17` (sha256 `036f4416…`). `dvc push` con el `dvc` de Homebrew
+(el del venv falla con botocore 1.43). Detalle en `docs/C7_15_ALTA20.md`, «Lote 17».
+
+## Lote alta20: cinco publicados, diecisiete detenidos — 12-nov-2026
+
+Orden del autor: incorporar al menos veinte padecimientos por el camino normal. Cinco superaron la prueba de
+2025 con `rolling_cv_v1` (siete motores) y están publicados, 0/4 en curso: otitis media aguda,
+conjuntivitis, amebiasis intestinal, accidente de transporte en vehículos con motor y edema, proteinuria y
+trastornos hipertensivos del embarazo (sin sexo, 37 productos). Son cuarenta en el sitio y treinta y seis del
+runner en la paridad. Quemaduras, insuficiencia venosa e hiperplasia de próstata rechazaron (nacional) y
+siguen `configured`; diecisiete más están detenidos porque ETS o Ridge fallan en series escasas y la política de
+baja incidencia es decisión del autor, no tomada (`docs/alta20/DECISIONES_PENDIENTES.md`). Consolidado
+vigente de W42: `ingestion_observado_W43/candidato_con_alta20` (sha256 `fce8f3bc…`). Detalle en
+`docs/C7_15_ALTA20.md`. El EpiBot pide precisar ante «otitis» o «amebiasis» a secas (abarcan más que el
+bloque) y no da cifras de los subtipos con código propio; segundo dictamen de Fable en
+`docs/alta20/DICTAMEN_FABLE_IMPLEMENTACION_2026-11-12.md`.
+
+## Sin boletín 44 y EPI con el radar — 10-nov-2026
+
+El índice oficial de gob.mx, consultado el 2026-11-11 04:44:58Z (22:44 del 10-nov en Ciudad de México),
+lista 43 boletines de 2026 y el último es `sem43.pdf`: no hay semana nueva, así que no se registró
+ninguna observación ni se tocó el consolidado (`candidato_con_neumonias` sigue siendo la base). El sitio
+servido coincidía con el frontend `main` en los 31 `vista.json` (corte W42), catálogo, punteros,
+`knowledge.json`, `news.json` y `assets/boletin/actual.json` (boletín 43). EPI ahora lee esa misma foto
+del radar y, para las categorías no modeladas, responde con las cifras impresas del cuadro y su
+estado, sin pronóstico (frontend PR #86, `epibot/js/radar_boletin.js`); los temas sensibles siguen en
+la respuesta de crisis. El commit del bot `69e761f3` (registro del 43, `[skip ci]`) no tenía CI propio.
+
+## Neumonías y bronconeumonías con el control — 10-nov-2026
+
+Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14) reprobó el gate de 2025 en el total
+nacional (sMAPE 18.0 frente a 13.4 del control) y está publicada con el control por orden del autor, nunca
+como validada. El bloque pasa del Cuadro 5.1 al 5.2 en 2024_sem07 con el mismo ancho: el grupo de cuadro
+declara `periodos`. Consolidado vigente de W42: `ingestion_observado_W43/candidato_con_neumonias`
+(sha256 `3e3cf0fd…`), base de la semana siguiente. Son treinta y un padecimientos del runner en la paridad
+semanal. Detalle en `docs/C7_14_NEUMONIAS.md`.
+
+## Boletín 43 integrado — 9-nov-2026
+
+Primer paso semanal de punta a punta con un boletín real (`sem43.pdf`, sha256 `f24aea93…842f3c8a`,
+disponible en gob.mx desde 2026-11-09 18:53:35 UTC). Los cuatro legacy avanzan al boletín 43 con el
+productor v5 y los 30 del runner registran la observación 2026-W42: Obesidad PASS 4/4 y los otros 29 a
+1/4, sin ningún FAIL. Para Asma esa disponibilidad es anterior a su emisión
+(`after_emission.first_available: false`). Consolidado vigente:
+`ingestion_observado_W43/candidato_completo` (sha256 `be9883bc…`, paridad PASS para los 34), que sustituye
+a `candidato_con_asma` como base de la semana siguiente. Covid-19: emisión `2026-W43.json`.
+
+## Asma publicada — 9-nov-2026
+
+Asma (J45, J46) superó el gate de 2025 con `rolling_cv_baja_incidencia_v1`, política que eligió el autor
+tras el fallo cerrado de ETS en dos ajustes de Tlaxcala (asma no es de baja incidencia; Ridge quedó fuera
+sin fallar). Publicada desde `asma_j45_release_28da01ab0b42`, 0/4 en curso. El boletín 43 (W42) ya era
+público al emitir: W42 no es prospectiva respecto de la información y ninguna superficie lo afirma.
+Detalle en `docs/C7_13_ASMA.md`. Son treinta padecimientos del runner en la paridad semanal; el
+consolidado vigente de W42 es `candidato_con_asma`.
+
+## Cánceres: mama con el control y cuello del útero — 8-nov-2026
+
+Tumor maligno de la mama (C50) reprobó el gate de 2025 y está publicado con el control por orden
+del autor, nunca como validado. Cuello del útero (C53) superó el gate y es el primer padecimiento
+sin desglose por sexo (`sex_breakdown: false`: 32 bases «general», 37 productos). Los otros 15
+cánceres sólo tienen datos desde 2023: con la política `rolling_cv_historia_corta_2023_v1` (desarrollo
+2025, prueba 2026-W01..W41) 10 aceptan y están publicados; los 5 rechazados están publicados con el
+control por orden del autor, nunca como validados.
+El 9-nov-2026 nueve de ellos se reevaluaron con la verdad
+de 2026 recuperada (sin filas imputadas): ningún veredicto cambió y sus releases se reemplazaron.
+Detalle en `docs/C7_12_CANCER.md`. Son veintinueve padecimientos
+del runner en la paridad semanal.
+
+## Radar del boletín 42 — 8-nov-2026
+
+Infecciones intestinales por otros organismos (A04, A08-A09), infección de vías urinarias y úlceras,
+gastritis y duodenitis superaron el gate de 2025 y están publicadas, 0/4 en curso. IRA y gingivitis lo
+reprobaron y están publicadas con el control por orden expresa del autor, nunca como validadas
+(`CONTROL_ONLY` al completar). Detalle en `docs/C7_11_RADAR_W42.md`. Son doce padecimientos del runner en
+la paridad semanal.
+
+## Cardiovasculares publicadas — 7-nov-2026
+
+Hipertensión arterial, enfermedad isquémica y cerebrovascular están publicadas; detalle en
+`docs/C7_10_CARDIOVASCULARES.md`. Sólo hipertensión superó el gate de 2025; las otras dos son el
+control, con la confirmación expresa del autor, nunca validadas. Entran en la paridad semanal con
+los otros ocho.
+
+## F50 publicada con el control — 6-nov-2026
+
+Anorexia, bulimia y otros trastornos alimentarios (F50) está publicada desde
+`anorexia_f50_release_173404ea4ef0` con el control `seasonal_naive_lag52`: el gate de 2025 rechazó el
+portafolio y el autor autorizó esa caída (`acceptance_fallback_run`). Nunca presentarlo como aceptado
+ni como validado: la comparación prospectiva sería contra sí mismo (`CONTROL_ONLY`). Covid-19 no es
+padecimiento modelado: va en `rechazados.html` como foto fija, `trained` y sin canales, sin paso
+semanal. Detalle en `docs/C7_9_F50_COVID_RECHAZADOS.md`.
+
+## Diabetes publicada y árboles integrados — 5-nov-2026
+
+Diabetes tipo I y II están publicadas desde sus releases (`docs/C7_8_PUBLICACION_DIABETES.md`), con
+validación prospectiva en curso (0/4), nunca presentada como PASS. Los archivos sucios y stashes
+preservados en secciones inferiores ya se integraron en `main`; esas instrucciones de preservarlos
+son históricas. La cronología de cada boletín vive en `config/publication/<id>/bulletin_provenance.json`.
 
 ## Continuidad OnePlus — 20-sep-2026
 
-El artículo PLOS ONE ya tiene C, D y A+B ampliada aplicadas y selladas; aún no está
-enviado. Usar `Congresos/OnePlus/PLOS_build/latex/manuscrito_plos.tex` para revisión y
-`manuscrito_plos_SUBMISSION.tex` para Editorial Manager. Las cifras primarias son 53.2
-sMAPE, 0.387 MASE y 267/288 (92.7 %) en 288 estatales; 333 es sólo cobertura del sistema
-(288 estatales, 36 regionales, 9 nacionales). Reparto H3: Ensemble 110, Stacking 109,
-Prophet 87, DeepAR 27. Los resultados/tablas/figuras históricas heterogéneas fueron
-retirados del manuscrito, no borrados del disco.
+**Artículo científicamente corregido, no enviado.** C, D y A+B ampliada están selladas.
+La fuente vigente es `Congresos/OnePlus/PLOS_build/latex/manuscrito_plos.tex` y la
+variante administrativa es `manuscrito_plos_SUBMISSION.tex`. A+B retiró
+`tab:motor`, `fig:dist`, `fig:cvdep`, `tab:ablation` y `fig:resel`; los titulares
+correctos son 53.2 sMAPE, 0.387 MASE y 267/288 (92.7 %) para las 288 series estatales.
+Las 333 series sólo describen cobertura (288 estatales + 36 regionales + 9 nacionales).
+El reparto H3 es Ensemble 110, Stacking 109, Prophet 87 y DeepAR 27; DeepAR retiene
+26 de sus 231 victorias históricas y recibe una serie de Prophet. No afirmar que
+DeepAR sea consistentemente inferior: gana a Prophet en depresión en comparaciones
+significativas.
 
-Para retomar: primero subir `PLOS_build/envio_2026-09-18/manuscrito_plos_2026-09-18_OVERLEAF_PREVIEW.zip`
-a Overleaf y revisar sus cinco figuras. El ZIP administrativo compañero no contiene
-figuras porque PLOS las recibe aparte. No usar `latex.zip` de 8-jul: es obsoleto.
-No compilar localmente la variante de envío hasta resolver `changepage.sty` o usar
-Overleaf. No enviar ni desplegar sin autorización explícita.
+Paquetes nuevos, sin subir: `PLOS_build/envio_2026-09-18/` contiene el ZIP de revisión
+con cinco figuras (`...OVERLEAF_PREVIEW.zip`, SHA-256 `fef91b2e…`) y el ZIP mínimo para
+Editorial Manager (`...PLOS_SUBMISSION.zip`, `654f45f9…`). Ambos derivan de los TeX
+auditados y verifican por inventario/hash, pero no se compilaron localmente porque falta
+`changepage.sty`; la siguiente comprobación es subir el ZIP preview a Overleaf y revisar
+visualmente las cinco figuras. `PLOS_build/latex.zip` (8-jul, `0535cdf1…`) es histórico
+y no se debe usar.
 
-El bot continúa con el defecto de `scripts/build_tableau.py:134-138`: conserva bandas de
-DeepAR al reasignar puntos de otros motores. W23 sigue en cápsula: etapa B, W34, snapshot,
-entrenamiento, DVC y despliegue siguen bloqueados. Preservar el árbol sucio preexistente.
+Producción no cambió: `build_tableau.py:134-138` sigue mezclando bandas de DeepAR con
+puntos de otros motores; afecta al bot y debe corregirse antes de comunicar incertidumbre.
+La cápsula W23 está aislada y auditada, pero etapa B/W34/snapshot/entrenamiento/DVC/deploy
+siguen sin ejecutar. Preservar los siete archivos sucios ya declarados; no hacer reset,
+checkout global ni DVC global.
 
 ## Salida de sesión WCP — estado único vigente — 9-sep-2026
 
@@ -296,21 +468,24 @@ humanos ni acredita ceguera. Frontend y fuentes/modelos no fueron modificados.
 > No reiniciar diseño ni reabrir el logo como bloqueo. No hacer acciones externas sin autorización.
 
 
-> Actualizado al cierre de limpieza: backend `main@77dc2dcb`, frontend `main@8490e433`,
-> ambos alineados con `origin/main`, el 2-sep-2026.
-> Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
-> workspace ni autoriza acciones externas.
+## Cierre vigente y reanudación WCP — opción 7 — 2026-09-04
 
-Próxima tarea deliberada: cerrar técnicamente la **opción 7** del e-póster WCP 2026. Usar
-`../planes/PROMPT_REANUDAR_WCP_2026_OPCION7_2026-09-04.md` (SHA256
+La planificación del 2-sep quedó superada. El e-póster #3134 está construido en opción 7.
+Reanudar con `../planes/PROMPT_REANUDAR_WCP_2026_OPCION7_2026-09-04.md` (SHA256
 `a4385a9f6019433cb3a77736b766fd1c3ec736ee515cc65b7a3345dc234eedd3`) y copiar el bloque
-entre `## PROMPT` y `## FIN DEL PROMPT`. No volver al plan del 2-sep. Estado: 25/29 en
-ambos idiomas, sello de 49 piezas, cuatro revisiones humanas caducadas y suite de mutación
-ROTA 28/48 por veinte anclas rancias. Única decisión visual abierta: el logo WPA aislado;
-se recomienda retirarlo conservando el lockup WCP. **No hubo financiamiento** y no se
-reabre como duda o pendiente. No hacer commit, push, deploy, subida ni comunicación externa.
+entre `## PROMPT` y `## FIN DEL PROMPT`.
 
-## 0. Estado: P1 W33 y P1b publicadas; W34 sólo con PDF oficial
+Estado: PDF EN `0467672da0f386f40fbf31df97d34cda03969e6bdfb1416e730f5abe5a163133`
+(271,222 B), PDF ES `7f93a9a5dca43873121a473af2e1cec00e03b0092cbd54c61ff57c972368f091`
+(266,742 B), 25/29 en ambos y sello de 49 piezas. G11, G12, G14 y G15 requieren revisión
+humana sobre hashes finales. La suite de mutación está ROTA 28/48 por veinte anclas rancias;
+prioridad G6 de 96 dpi y los cuatro brazos de G22. Única decisión visual abierta: logo WPA
+aislado del pie; se recomienda retirarlo conservando el lockup WCP. **No hubo
+financiamiento**, confirmado por el autor; no reabrirlo ni convertirlo en pendiente. No
+mencionar como tarea pendiente ningún correo a Kenes. Sin commit, push, deploy, subida ni
+acción externa sin autorización explícita.
+
+## Estado P1 vigente — corte público único W33
 
 La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
 verificable es W33; W34 aún no está publicada. **P1 está publicada**: el sello
@@ -356,322 +531,475 @@ clon, DVC, PDFs, modelos y evidencia (`planes/p1_2026-w33_2026-09-02/`, con
 `limpieza/inventario_antes.txt`) se conservan. Producción sigue en W33; W34, DVC, datos y
 despliegue intactos.
 
-Regla gobernante: todos los miembros `published` del registry comparten un corte público
-único. Uno faltante, adelantado, atrasado o sin cobertura exacta bloquea el lote completo;
-no se publica al resto ni se reduce el conjunto por flags. Obesidad y Anorexia siguen
-fuera por lifecycle, pero una promoción futura las somete a la misma paridad. No anticipar
-W34: validar primero el PDF oficial y después llevar juntos a todos los publicados.
+Invariante no negociable: el conjunto derivado del registry con `lifecycle=published`
+avanza como una unidad. Si cualquier publicado falta o no comparte exactamente
+`(año, semana)` con los demás, el flujo aborta antes del sello y ninguno se publica. No
+se permite arrastrar datos viejos, publicar parcialmente ni omitir un padecimiento para
+desactivar la paridad. Obesidad y Anorexia permanecen fuera mientras no sean `published`;
+una promoción futura las incorpora a este mismo gate. W34 sólo entra cuando exista el PDF
+oficial y los cuatro publicados puedan cerrar juntos en W34.
 
-## 0a. Historial: P0 del flujo semanal
+## Historial P0 del flujo semanal — 2026-09-02
 
-Backend en `p0/namespace-e-inmutabilidad-del-sello` con 26 commits rebased sobre el
-`main` remoto `16476a98` (tip `f88a065e`; 2-sep, tercera tanda correctiva: runner,
-worktrees, sello atado al HEAD, allowlist v2, contrato profundo, tabla 333 reparada, causa
-raíz en `merge_all_models`, orquestador, auditoría final), árbol limpio y rama enviada a
-`origin`. PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`. `origin/main` local sigue en `a9a694c8` (sin pull). El frontend
-`main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
+Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
+receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **26 commits rebased
+sobre el `main` remoto `16476a98`** (tip `f88a065e`; respaldo local del tip previo `584cf72d`
+en `respaldo/p0-584cf72d-2026-09-02`), árbol limpio, **enviada a `origin`**. PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`.
+El remoto `16476a98` sólo traía dos commits de datos del CI (registry W33 y punteros DVC
+W33 de neuro, sin Dengue); `main` y `origin/main` locales están ya en `5da24116`.
+Frontend canónico: `main@0e777995`, intacto.
 
-`make update-week` sigue bloqueado en preflight hasta la autorización de P1 (red y
-decisión de publicar). Flujo: `materialize → hydrate → generadores (--out) → bump-cache →
-run-gates → seal → prepare-worktrees → apply → check-completeness → discard-worktrees
---manifiesto`, todo atado al mismo par de HEAD y política por `materializacion.json`.
-`CONFINAMIENTO_LISTO = True`; P0.11 = opción C.
+`make update-week` sigue bloqueado en preflight **por autorización, no por código**: P0.1,
+P0.2 y P0.8 están cerrados; correr el carril real exige red (pull, `dvc pull`,
+sincronización aditiva, API de Gemini para el índice RAG) y la decisión de publicar (P1).
+Flujo cableado y probado: `materialize` (git archive de los HEAD; escribe
+`materializacion.json`, que `hydrate`, `bump-cache`, `run-gates` y `seal` exigen con sus
+HEAD y política) → `hydrate` (sandbox con SOLO la allowlist `entradas/2`: 44 entradas
+reales incluidas `dengue_boletin.csv`, su manifiesto, `inegi.csv`, `models/*/*/*_completo.csv`
+por patrón y el ONI cacheado; directorios scratch; contrato del HEAD: catálogo, registry y
+profundidad mínima 52 con continuidad MMWR) → generadores en el sandbox con `--out` →
+`bump-cache` (DATA_VERSION y cada `?v=`, imports anidados incluidos, plan en memoria) →
+`run-gates` (evidencia en `gates.en_curso/` con marcador; huérfanos por pgid+arranque;
+residuos apartados, nunca borrados; digest del ejecutable gobernante) → `seal` (evidencia,
+cobertura, cadena de caché, inmutables, `revisa_aditivo` base ⊆ candidato, semanas atadas
+a los cortes y a `boletin.ultima_semana`, y la poda PREVISTA con retirables/lápidas, todo
+ANTES de podar) → `prepare-worktrees` (rollback; revalida gates contra la política del
+HEAD canónico) → `apply` (re-liga bajo el lock; composición del par antes de `aplicado`,
+también en el no-op) → `check-completeness` → `discard-worktrees --manifiesto` (ligado a
+run_id, digest, lock, estado y a que git reconozca cada worktree). `CONFINAMIENTO_LISTO =
+True`; P0.11 = opción C.
 
-Gate local: 902 pruebas de publicación; `make test-fast` 2,820 passed, 1 skipped, 66
-deselected; Ruff, mypy, `bash -n`, `git diff --check` verdes; 85 mutaciones vistas caer.
-Ensayo real del 2-sep (`planes/ensayo_P012_2026-09-02/`): la cadena de generación entera corre sin red en el sandbox; `run-gates` da `rag` FAIL porque el índice RAG exige GEMINI_API_KEY (red) para reconstruirse (fallo cerrado, sin sello); el tramo sello→par desechable pasa sobre la composición real con composición aplicada == sellada. Pendiente: `WEEKS_LIMIT` (decisión), auditoría del avance remoto con red, y P1
-con autorización. Plan auditado:
-`../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
-`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
+Datos: la tabla 333 rastreada quedó **reparada** (432 filas, `76d3e311…`, commit
+`dd54d51b`, autoridad `produccion_dengue.csv` documentada en `catalog.py`) y la causa raíz
+corregida en `merge_all_models` (`4962e582`). `WEEKS_LIMIT = 15` en
+`reselect_motor_2026.py` **queda como decisión pendiente documentada**: el comentario dice
+«= boletín más reciente» pero ningún contrato canónico fija la ventana, y cambiarla
+re-selecciona motores de 333 series.
 
-## 1. Precedencia y forma de trabajo
+Gate vigente: 902 pruebas de publicación; `make test-fast` = **2,820 passed, 1 skipped, 66
+deselected** (cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes; **85
+mutaciones del código (las 42 originales con anclas al día, 28 de las defensas nuevas y
+16 de la auditoría final), 85 vistas caer**; auditoría adversarial final por tres agentes
+ciegos: sus hallazgos alto/medio corregidos en `83950f96` y `a0fb313b`.
 
-Antes de actuar:
+Ensayo real del 2-sep (evidencia en `planes/ensayo_P012_2026-09-02/`, con `SHA256SUMS`):
+**tramo 1**, la cadena de generación completa sobre W31 sin red —materialize, hidratación
+real (44 entradas, contratos PASS), los diez pasos de generación en el sandbox, `bump-cache`
+(DATA_VERSION 20260824→20260825, kb.js?v=104→105, app.js?v=138→139) y `run-gates`: `cifras`
+PASS y **`rag` FAIL** porque el índice RAG rastreado no cubre el `knowledge.json` regenerado
+y reconstruirlo exige GEMINI_API_KEY (red): fallo cerrado, sin sello. **Tramo 2**, sello →
+par desechable sobre la composición real con un cambio fuera del corpus RAG: gates PASS,
+run `e147ff8deb914b4a`, prepare/apply/check en clones locales con composición aplicada ==
+sellada, no-op verificado, byte alterado → check falla y apply deja el par inválido,
+discard ligado al manifiesto; repos reales con un solo worktree y frontend limpio. Los tres
+hallazgos que el ensayo destapó (directorios scratch, ONI sin red, NB-GLM constante) están
+corregidos en `98faf4d3` y `a0fb313b`.
 
-1. leer `/Users/haowei/Documents/Integrador/AGENTS.md` completo;
-2. leer este archivo;
-3. para Obesidad/C7, consultar `docs/PLAN_C7_PUBLICACION_OBESIDAD.md` y resolver el
-   estado efectivo desde el registry y los JSON de `config/publication/obesidad/`;
-4. ejecutar `git status --short --branch` en backend y frontend;
-5. preservar archivos no rastreados y cambios ajenos;
-6. auditar sólo el delta si el checkpoint cambió.
+Plan auditado:
 
-Orden de autoridad: instrucciones explícitas del usuario → `AGENTS.md` → este archivo →
-README y bitácoras históricas. El plan C7 es cronológico y conserva rondas supersedidas:
-una frase antigua `INCOMPLETE 1/4` no vence al estado canónico verificado.
+- `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+  `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
 
-No inferir autorización para `git push`, PR, merge, deploy, publicación, entrenamiento,
-`dvc add/push/pull/fetch`, escrituras S3 o Google Sheets. Cada acción externa se autoriza
-por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petición expresa.
+## Estado CI semanal — 2026-09-01
 
-## 2. Estado operativo vigente
+- PR #12 quedó en `main` mediante merge commit `59488c57`; la rama de trabajo ya fue
+  borrada local y remotamente. Después se creó `ci/skip-budget-ets-legacy`, hoy mergeada
+  pero todavía presente local y remotamente.
+- Runs remotos verificados: PR #13 `33466506664` y push final a `main` `33467472543`,
+  ambos con Code Quality PASS, Tests PASS e Integration Tests SKIPPED.
+- En Ubuntu: 2,509 colectadas = 1,946 passed + 497 skipped + 66 deselected; cobertura
+  74.50% con umbral canónico único de 70. El presupuesto de skips es exactamente 497.
+- El cron del lunes ejecuta Quality y Tests. Integration es legacy y sólo corre con
+  `workflow_dispatch`; en schedule debe aparecer SKIPPED, no verde.
+- El incidente está arreglado en push/PR, pero su cierre operativo espera el schedule
+  del 7-sep-2026. La rutina `trig_0182z2jL5YUwBbmTmHnbPS3t` lo comprueba a las 06:50 UTC.
+- Rollback únicamente por causalidad demostrada: `git revert -m 1 59488c57` en rama y
+  PR; nunca reset ni force-push de `main`.
+- Los checkpoints `main@cb7695d9` y frontend `main@5f8666dc` describen el cierre histórico
+  de esa tanda, no el worktree actual; usar la sección P0 superior para reanudar. Persisten
+  dos ramas ya mergeadas, locales y remotas:
+  `ci/skip-budget-ets-legacy` y `fix/frontend-deudas`.
+- Los cuatro agregados legacy ya no tienen doble guarda: viven en `tests/integration/`,
+  se deseleccionan en el job normal y fallan por ausencia en el manual. Pendiente después
+  del schedule: política de skips/restauración del carril Integration, readiness 1/4→4/4,
+  prototipo de cadena sintética y sólo entonces acotar
+  los 460 nodeids en
+  156 grupos que siguen pendientes en D1. Índice vigente: `docs/DEUDAS_VIGENTES.md`.
 
-### Repositorios
+## Resumen del Proyecto
 
-- Backend: `EpiForecast-MX`, rama de trabajo
-  `p1/actualizacion-semanal-2026-w33`, checkpoint material `e8f7ba0a`, abierta como PR
-  P1 fusionada (`d7c9c6c2`) y P1b fusionada (`3bd67236`, CI de `main` 33677859434 verde).
-- Frontend canónico: `EpiForecast-IMSS-Dashboard`, `main@8490e433` (P1 y P1b publicadas;
-  banner estático correcto en producción).
-  durante P0.
-- Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
-  `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir
-  «main activo» con «una sola rama» hasta borrarlas de forma explícita.
-- El remoto local `respaldo` conserva una referencia de archivo MICAI: no borrarla.
-- Mantener backend y frontend en commits y PR separados.
+**EpiForecast-MX** es una plataforma de inteligencia epidemiologica multi-modelo para el **IMSS**. Pronostica la incidencia semanal de Depresion (F32), Parkinson (G20) y Alzheimer (G30) en las 32 entidades federativas de Mexico con un horizonte de 52 semanas. Utiliza **Prophet**, **DeepAR** (GluonTS + PyTorch), **Ensemble** (Prophet + XGBoost) y **Stacking** (Prophet + ETS + LightGBM + Ridge) como motores de pronostico. Cada modelo genera 333 artefactos .pkl (3 padecimientos x ~111 combinaciones estado/region/sexo).
 
-### CI semanal
+## Comandos de Ejecucion (Makefile)
 
-El incidente «CI falla los lunes» está arreglado en `main` mediante PR #12, merge
-`59488c57`. La tanda de deuda/compatibilidad entró después por PR #13. Run vigente de
-push a `main` `33467472543`:
+### Pipeline de Datos
+- `make preprocess`: Ejecuta todo el flujo de limpieza y mapeo INEGI (secuencial).
+- `make get-dataset`: Descarga el dataset RAW (SINAVE).
+- `make filter ARGS="padecimiento.tipo='Depresion'"`: Filtra por padecimiento.
+- `make clean`: Limpieza de nulos, duplicados y formato.
+- `make transform`: Feature engineering (outliers, regiones, agrupacion).
+- `make get-inegi`: Descarga datos demograficos INEGI.
+- `make mapper`: Mapea entidades con INEGI.
 
-- Code Quality: PASS;
-- Tests: PASS;
-- Integration Tests: SKIPPED;
-- 2,509 colectadas = 1,946 passed + 497 skipped + 66 deselected;
-- cobertura 74.50%; gate canónico único `fail_under = 70`.
+### Entrenamiento y Modelado (Multi-Modelo)
+- `make train`: Entrena segun el `modelo_activo` en `config/base.yaml`.
+- `make train-prophet`: Fuerza entrenamiento con Prophet (CPU, paralelo con joblib).
+- `make train-deepar`: Fuerza entrenamiento con DeepAR (local, CPU/MPS).
+- `make train-ensemble`: Fuerza entrenamiento con Ensemble (Prophet + XGBoost).
+- `make train-stacking`: Fuerza entrenamiento con Stacking (Prophet + ETS + LightGBM + Ridge).
+- `make train-all`: Entrena los 4 modelos secuencialmente.
+- `make avance5`: Entrena el Ensemble con visualizaciones comparativas para los 3 padecimientos.
+- `make avance5 ARGS="padecimiento.tipo='Alzheimer'"`: Ensemble para un solo padecimiento.
+- `make train-sagemaker`: Build imagen Docker + lanzar entrenamiento DeepAR en AWS SageMaker (GPU).
+- `make train-sagemaker-build`: Solo build + push imagen Docker a ECR.
+- `make train-sagemaker-local`: Build imagen + test local con Docker.
+- `make train-sagemaker-parallel`: 3 jobs paralelos (1 por padecimiento).
+- `make train-sagemaker-fast`: Build + 3 jobs paralelos.
 
-`--cov` no vive en `pytest.addopts`: el job `Tests` declara el alcance y toma el
-umbral de `[tool.coverage.report]`. `scripts/compliance_check.py` usa
-`--cov-fail-under=0`: es diagnóstico con mínimos propios, no el gate canónico.
+### Prediccion y Comparacion
+- `make predict ARGS="modelo_activo='deepar'"`: Genera pronosticos para un modelo especifico.
+- `make predict-all`: Genera pronosticos de los 4 modelos secuencialmente (Prophet, DeepAR, Ensemble, Stacking).
+- `make tableau`: Construye dataset Tableau con seleccion automatica de modelo productivo (SMAPE).
+- `make compare`: Genera graficos de alta calidad comparando Real vs los 4 modelos.
+- `make compare-metrics`: Genera comparativa de metricas (Excel + HTML con badges Overfitting/Leakage).
+- `make tabla-produccion`: Genera tabla de 333 modelos de produccion (SMAPE, validacion semanal).
+- `make report`: Genera reporte HTML de resultados.
+- `make bitacora`: Genera bitacora HTML del modelado Prophet v1-v6.
+- `make reporte-avance5`: Genera reporte Avance 5 (Markdown + 18 graficos + CSV de 333 modelos de produccion).
 
-El cron corre lunes 06:00 UTC. Quality y Tests corren; Integration es legacy y sólo se
-ejecuta por `workflow_dispatch`. En push, PR y schedule debe aparecer **SKIPPED**, no
-verde. La concurrencia separa eventos por `github.event_name` y no cancela schedules.
+### Calidad y Pruebas
+- `make quality`: Ejecuta lint (Ruff), typecheck (Mypy) y tests (Pytest).
+- `make format`: Formatea el codigo automaticamente con Ruff.
+- `make test-fast`: Ejecuta solo pruebas unitarias rapidas (sin slow/integration).
+- `make lint`: Verifica formato y calidad sin modificar.
+- `make typecheck`: Type check con mypy.
 
-El cierre operativo espera el schedule del 7-sep-2026. Hasta entonces: «arreglado y
-verificado en push/PR; schedule aún no observado».
+### DVC y Datos
+- `make data-pull`: Descarga datos desde S3 via DVC.
+- `make data-push`: Sube datos a S3 via DVC.
+- `make models-push`: Versiona modelos y sube a S3.
+- `make s3-sync`: Sync CSVs + forecasts directo a S3 (sin DVC, acceso rapido para Tableau/dashboard).
+- `make data-weekly`: Agrega y versiona nuevos datos semanales del boletin.
 
-### Deuda de skips
+### Pipeline Compuesto
+- `make model-pipeline`: Pipeline completo (train -> models-push -> predict -> report -> forecast-push).
 
-El job verde contiene 497 skips en Ubuntu, exactamente el presupuesto configurado. El
-universo D2 histórico auditado tiene 552 nodeids:
+## Arquitectura y Estandares
 
-- 81 passed y 471 skipped;
-- 460 nodeids en 156 grupos usan la cadena sellada;
-- 6 tienen dependencia implícita confirmada;
-- los 4 agregados legacy antes doblemente guardados viven ahora en `tests/integration/`:
-  el job normal los deselecciona y el manual falla si falta un CSV;
-- 1 prueba es mixta y debe dividirse.
+### Patron Factory (SOLID)
+- Los modelos heredan de `epiforecast.models.base.ForecastModel`.
+- Interfaz: `fit()`, `predict()`, `cross_validate()`, `save()`, `load()`, `get_params()`, `run()`.
+- Se registran mediante el decorador `@register_model("nombre")`.
+- Se instancian via `epiforecast.models.factory.create_model(name, **kwargs)`.
+- Implementaciones: `ProphetForecaster` (Prophet), `DeepARForecaster` (GluonTS + PyTorch), `EnsembleForecaster` (Prophet + XGBoost), `StackingForecaster` (Prophet + ETS + LightGBM + Ridge).
+- No importar clases de modelos directamente en scripts; siempre usar `create_model`.
 
-Los 44 despertados son 15 `unit` + 29 `contract`, movidos y verificados en clon
-limpio. No llamar «460 grupos» a lo pendiente. El job Tests limita ahora los skips a 497;
-cuatro controles nuevos elevan la colección del árbol de trabajo a 2,509. Falta la política
-del carril manual. Orden vigente: política de Integration → prototipo de cadena sintética
-→ sólo si es viable, los 156 grupos.
-La cola contrastada y las memorias supersedidas están en `docs/DEUDAS_VIGENTES.md`.
+### Configuracion Dinamica
+- `config/base.yaml`: Controla `modelo_activo`, padecimiento, rutas y opciones globales.
+- `config/models/prophet.yaml`: Hiperparametros Prophet, grid de CV, estacionalidad, cambios de regimen.
+- `config/models/deepar.yaml`: Hiperparametros DeepAR (epochs, capas, dropout, etc.).
+- `config/models/ensemble.yaml`: Hiperparametros Ensemble (Prophet + XGBoost).
+- `config/models/stacking.yaml`: Hiperparametros Stacking (Prophet, ETS, LightGBM, Ridge meta-learner).
+- `config/data/preprocessing.yaml`: Parametros de preprocesamiento.
+- `config/features/feature_engineering.yaml`: Parametros de feature engineering.
+- `config/visualization/plots.yaml`: Estilos de graficos.
+- `config/infrastructure/logging.yaml`: Configuracion de loguru.
+- Las rutas en `config/base.yaml` usan interpolacion OmegaConf: `./models/${modelo_activo}`.
+- Overrides CLI: `python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'`.
+- La config se carga via `from epiforecast.utils.config import conf, logger`.
 
-## 3. Padecimientos y lifecycle
+### Entrenamiento SageMaker (DeepAR con GPU)
+- Imagen Docker: `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime` (NVIDIA T4 en `ml.g4dn.xlarge`).
+- Entry point: `scripts/entrena_sagemaker.py` — detecta entorno, copia datos, fuerza `modelo_activo=deepar`.
+- Launcher: `aws/sagemaker_launcher.py` — build ECR, lanzar job, test local.
+- Cuenta AWS: `564141855321`, bucket `s3://epiforecast-mx-data`, region `us-east-1`.
+- Dependencias del container: `aws/requirements_sagemaker.txt` (sin DVC, sin dev tools).
+- Flujo: `make train-sagemaker` → build + push ECR + lanzar job → descargar modelos con `aws s3 sync`.
 
-`config/padecimientos.yaml` es la fuente canónica de identidad, perfiles, engines,
-lifecycle y canales. Sólo `published` llega a consumidores `published_only`.
-
-| ID | Estado | Carril | Visibilidad |
-| --- | --- | --- | --- |
-| `depresion` | `published` | legacy neuro | pública |
-| `parkinson` | `published` | legacy neuro | pública |
-| `alzheimer` | `published` | legacy neuro | pública |
-| `dengue` | `published` | legacy standalone | pública |
-| `obesidad` | `trained` | runner/release C7 | **NO-GO** |
-| `anorexia_f50` | `configured` | demostración N+1 | **NO-GO** |
-
-### Neuro y Dengue publicados
-
-El pipeline legacy usa `ForecastModel` + factory para Prophet, DeepAR, Ensemble,
-Stacking y NBGLM. No importar clases concretas desde scripts; usar `create_model()`
-cuando el carril legacy lo requiera.
-
-- Neuro = Depresión, Parkinson y Alzheimer: 333 productos.
-- Dengue es standalone, no parte de los 333 neuro.
-- Dengue entrena Prophet, DeepAR, Ensemble, Stacking y NBGLM.
-- Sólo Prophet, DeepAR y NBGLM son elegibles; los árboles no son productivos.
-- La selección legacy 2026 tiene caveat in-sample. No presentarla como OOS; el backtest
-  leave-one-epidemic-out de NBGLM sí es OOS.
-
-### Obesidad E66 — gate 4/4, publicación NO-GO
-
-Obesidad está `trained`, `gallery_enabled: false`, sin engines legacy autorizados y
-con backend `runner_release`:
-
-- release `obesidad_release_2517e7858901`;
-- puntero `artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc`;
-- 64 modelos base + 47 derivados = 111 productos;
-- forecast puntual de 52 semanas, 5,772 filas, sin intervalos;
-- lifecycle y puntero público inactivos.
-
-Estado prospectivo verificado en lectura:
-
-```text
-.venv/bin/python -m scripts.prospective_status obesidad --check
-PASS 4/4 · semanas 2026-W27..W30
-observation_dataset_id = obesidad_0eaccbfa62ff
+### Estructura del Proyecto
+```
+EpiForecast-MX/
+├── aws/                          # Infraestructura SageMaker (Dockerfile, launcher)
+├── config/                       # Configuracion YAML unificada
+│   ├── base.yaml                 #   Modelo activo, rutas, padecimiento
+│   ├── models/                   #   Hiperparametros por algoritmo
+│   ├── data/                     #   Preprocesamiento
+│   ├── features/                 #   Feature engineering
+│   ├── visualization/            #   Estilos de graficos
+│   └── infrastructure/           #   Logging
+├── src/epiforecast/              # Paquete Python principal
+│   ├── models/                   #   Factory + Prophet + DeepAR + Ensemble + Stacking + base
+│   ├── data/                     #   Extraccion PDF, ingestion INEGI, preprocesamiento
+│   ├── evaluation/               #   Metricas (RMSE, MAE, MAPE, SMAPE, MASE)
+│   ├── visualization/            #   Graficos estilo IMSS
+│   ├── features/                 #   Feature engineering demografico
+│   ├── utils/                    #   Config, paths, helpers
+│   └── pipelines/                #   Pipeline base
+├── epi_modules/                  # Consola interactiva EPI
+│   ├── engine.py                 #   EpiEngine (Makefile, traduccion Gemini, ejecucion)
+│   ├── intent.py                 #   Clasificador de intents, typos, fuzzy matching
+│   ├── theme.py                  #   Tema Rich IMSS (PANTONE verde, dorado, guinda)
+│   ├── features/                 #   Modulos de funcionalidad
+│   │   ├── ai_chat.py            #     Chat con KnowledgeBase local + Gemini fallback
+│   │   ├── dashboard.py          #     Dashboard multi-panel Rich Layout
+│   │   ├── data_cache.py         #     Cache lazy-loading de datos del proyecto
+│   │   ├── data_explorer.py      #     Explorador interactivo del boletin
+│   │   ├── forecast_viewer.py    #     Visor de pronosticos con sparklines
+│   │   ├── knowledge_base.py     #     Base de conocimiento local (sin IA externa)
+│   │   └── model_browser.py      #     Navegador paginado de 333 modelos
+│   └── views/                    #   Modulos de presentacion
+│       ├── approval.py           #     Gate de aprobacion por nivel de riesgo
+│       ├── banner.py             #     Banner ASCII de bienvenida
+│       ├── common.py             #     Logs, pipeline, stats, scripts, historial
+│       ├── health.py             #     Dashboard de salud del sistema
+│       ├── help_menu.py          #     Menu de ayuda multi-seccion
+│       └── targets.py            #     Navegador de targets Makefile
+├── scripts/                      # Entry points CLI (~24 scripts)
+├── tests/                        #   unit/ + integration/ (136 archivos test, 2,509 colectados)
+├── data/                         # raw/ → interim/ → processed/ (DVC)
+├── models/                       # Artefactos .pkl (DVC, 4x333 = 1332 modelos)
+├── reports/                      # Graficos, reportes HTML, forecasts, ProdDetails/
+├── epi.py                        # Entry point de la consola interactiva EPI
+└── Makefile                      # Orquestacion MLOps (~55 targets)
 ```
 
-La evaluación conserva release, gate, candidato, control y umbrales congelados. El
-candidato supera al control en bases, 111 productos y nacional General.
+### Consola Interactiva EPI
+- Entry point: `python epi.py`. REPL con Rich TUI y tema IMSS 2026.
+- Flujo: entrada → `normalize_typos()` → `classify_intent()` → router a handler o `engine.translate()`.
+- **Intent classifier** (`epi_modules/intent.py`): 17+ intents (saludo, salir, limpiar, banner, dashboard, chat, datos, modelos, pronostico, scripts, ayuda, targets, stats, logs, pipeline, salud, historial).
+- **KnowledgeBase** (`epi_modules/features/knowledge_base.py`): Responde con datos reales del proyecto (metricas, boletin, modelos, equipo, semanas epidemiologicas). 18+ handlers en cadena de prioridad.
+- **Chat IA** (`epi_modules/features/ai_chat.py`): KnowledgeBase local primero, Gemini como fallback con contexto enriquecido e historial conversacional.
+- **Dashboard** (`epi_modules/features/dashboard.py`): Panel multi-seccion con datos del boletin, inventario de modelos, metricas forecast, stats de sesion.
+- **Data explorer** (`epi_modules/features/data_explorer.py`): Navegador del boletin con filtros y barras Unicode.
+- **Model browser** (`epi_modules/features/model_browser.py`): Tabla paginada de 333 modelos con SMAPE color-coded y badges diagnosticos.
+- **Forecast viewer** (`epi_modules/features/forecast_viewer.py`): Sparklines de pronosticos a 52 semanas.
+- **Aprobacion** (`epi_modules/views/approval.py`): Gate de confirmacion con clasificacion de riesgo (safe/modify/destructive).
+- **Historial persistente**: Ultimos 100 comandos en `.epi_history.json`.
+- **Logging**: `logs/epi.log` con timestamps ISO.
 
-**4/4 no autoriza publicar.** El `runs/readiness/obesidad/readiness_manifest.json`
-existente es anterior y todavía declara 1/4: es evidencia local obsoleta. El preflight
-Google/Tableau sigue `BLOCKED_EXTERNAL`.
+### Visualizacion
+- Los graficos comparativos se guardan en `reports/forecasts/comparacion_modelos/`.
+- Los graficos del Avance 5 (18 PNGs) se guardan en `reports/figures/ModeloFinal/`.
+- Paneles individuales (barras, zoom, produccion) en subcarpetas de `comparacion_modelos/`.
+- Usan la zona horaria `America/Mexico_City` (UTC-6) para las marcas de tiempo.
+- Estilo: Historial Real (Gris grueso), Prophet (Teal #004d40 dash-dot), DeepAR (Vino #880e4f dashed), Ensemble (Naranja #FF6F00), Stacking (Indigo #1A237E).
+- La ficha tecnica al pie de cada grafico forecast muestra el nombre real del modelo (detectado desde `meta_modelo` del CSV).
+- Todos los reportes siguen la paleta IMSS 2026.
 
-**Compatibilidad ETS cerrada en local y Ubuntu (1-sep).** SciPy 1.18
-añadió `_xp` al estado de `LinearOperator`; los pickles sellados anteriores no lo traen.
-El loader intenta primero el pickle normal y sólo ante ese `KeyError` exacto usa un
-unpickler local para `LbfgsInvHessProduct`; no parchea clases globales ni oculta otros
-errores. Los 16 modelos ETS reproducen sus 832 valores canónicos con error máximo
-`2.27e-13`; las 54 pruebas focales, el carril local completo y el run de `main`
-`33467472543` quedan verdes. El shim sigue siendo deuda temporal: depende de privados de
-SciPy y debe retirarse cuando exista un estado ETS portable versionado.
+### Seleccion de Modelo de Produccion
+- `scripts/genera_tabla_produccion.py` genera la base inicial de `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` por SMAPE de validacion cruzada.
+- **`scripts/reselect_motor_2026.py` (canónico desde 2026-04-30)**: re-selecciona el motor productivo usando SMAPE sobre realidad reciente del Boletin SINAVE 2026.
+  - Regla 1: serie con >=10 sem reales 2026 y total >=10 casos -> SMAPE 2026 real es criterio primario; MASE como desempate.
+  - Regla 2: serie con >=10 sem pero <10 casos (ruidosa, divisiones cercanas a cero infladas) -> forzar Ensemble como default seguro.
+  - Regla 3: serie con <10 sem reales (4 regiones agregadas y huecos puntuales) -> respetar asignacion CV anterior.
+  - Genera `reports/ProdDetails/auditoria_motores_2026.xlsx` con auditoria de los 333 combos: motor anterior, motor nuevo, SMAPE **y MASE** de los 4 motores en 2026 real (MASE = naive estacional lag 52 sobre la historia previa), criterio de seleccion.
+  - Distribucion productiva actual (post 2026-04-30, 227 cambios sobre los 333): Prophet 126, Ensemble 95, DeepAR 78, Stacking 34. `motor_ganador` global = Prophet.
+- **Hoja 1 (Produccion)**: 333 filas x ~50 columnas. Metricas por modelo, diagnosticos, comparativa historica + 13 columnas de auditoria 2026 (9 originales + 4 `mase_2026_*`).
+  - `casos_52_semanas_futuro`: suma de yhat del horizonte futuro (entero).
+  - `smape_prod/mase_prod/rmse_prod/mae_prod`: metricas CV del modelo seleccionado (recalculadas tras la re-asignacion).
+  - `overfitting`: ratio smape_test/smape_train — Alto (>2x), Moderado (>1.3x), OK.
+  - `leakage`: smape_train < 0.5% = Sospechoso, else OK.
+  - `casos_prev_52_semanas_real / _pronos`: comparativa historica (enteros).
+  - `precision_historica`: ratio pronos/real como porcentaje.
+  - `pron_sem_previa / realidad_sem_previa`: ultima semana para validar con boletin nuevo.
+  - `modelo_produccion`, `tipo_modelo`, `region_asignada` (n/a si propio), `justificacion`.
+  - `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `mase_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`.
+- Series con incidencia cero o baja confianza (<5 casos/52sem) se reasignan al modelo regional.
+- Predicciones redondeadas a enteros. Formato Excel con paleta IMSS 2026, filtros y paneles congelados.
+- Graficos embebidos: `scripts/excel_produccion_charts.py` genera 6 PNGs con paleta IMSS.
+- Formateo: `scripts/excel_produccion_fmt.py` aplica estilos institucionales.
+- **Pipeline canonico tras nuevo boletin**: `make tabla-produccion` -> `python3 scripts/reselect_motor_2026.py` -> `python3 scripts/build_tableau.py` -> `python3 scripts/build_web_knowledge.py` -> `python3 scripts/genera_validacion_semanal.py` -> `make compare` (PNGs).
+- **Cuadros de rendimiento 2026 en el EpiBot**: `build_web_knowledge.py` emite la seccion `rendimiento_2026` en `knowledge.json` (por padecimiento × motor: SMAPE y MASE mediana/promedio + fila Productivo). Neuro (Alzheimer/Depresion/Parkinson) desde `auditoria_motores_2026.xlsx`; **Dengue** (cohorte propia, motores DeepAR/Prophet/NBGLM) desde `produccion_dengue.csv`, que ahora guarda `mase_real_<motor>` (via `produccion_dengue.py`, mismo naive estacional lag 52). Agregacion robusta a MASE degenerado (`_MASE_CAP=20`: en Dengue año-bajo una serie casi-cero puede disparar el MASE a miles y contaminar el promedio). El EpiBot los dibuja con `answerRendimientoPorPadecimiento` (+ `_cuadroDengue`); disparadores: "rendimiento por padecimiento", "smape y mase por padecimiento", "cuadro de dengue". Se regenera solo en `make update-week` (paso 4 reselect, paso 7 dengue-produccion, paso 9 knowledge). Validado por recomputo independiente from-scratch (metricas propias) contra lo desplegado: 0 discrepancias.
 
-Antes de activar hacen falta, con permisos separados:
+### Validacion Semanal
+- `scripts/genera_validacion_semanal.py` genera `reports/ProdDetails/validacion_semanal.html`.
+- Compara pronosticos de los 4 modelos vs datos reales del boletin SINAVE mas reciente.
+- Desglose por sexo (Nacional y Regional) para cada padecimiento.
+- Actualiza columna `realidad_sem_previa` en el Excel de produccion.
 
-1. regenerar readiness local contra 4/4, sin promover;
-2. staging externo y preflight;
-3. Tableau Desktop y smoke test;
-4. autorización de apply;
-5. flip de lifecycle/puntero;
-6. merge, deploy y smoke público.
+### Validacion Prospectiva OOS (pronostico congelado)
+- `scripts/pronostico_congelado.py` (`make congela-pronostico` / `make valida-prospectivo`), cubre los 4 padecimientos (neuro via tabla_333 + Dengue via produccion_dengue.csv).
+- Existe porque `smape_real_2026` (la metrica de seleccion de motor) es IN-SAMPLE: el modelo se entrena sobre la serie completa incluyendo 2026 H1 y se puntua su ajuste in-sample. Ver `docs/research/hallazgos/DENGUE_AUDITORIA_LEAKAGE.md`.
+- `freeze`: guarda el pronostico del motor productivo por serie SOLO para la cola futura (ds > corte = no vista) en `reports/ProdDetails/congelado/forecast_congelado_<fecha>.csv` + puntero `forecast_congelado_latest.txt`. Snapshot inicial (2026-06-05): corte W20, 396 series, 16,032 filas.
+- `validar`: confronta el congelado vs el boletin vigente, reporta SMAPE/MAE OOS por serie y nacional en `reports/ProdDetails/validacion_prospectiva.html` (+ `.csv`). Solo puntua semanas posteriores al corte (genuinamente no vistas).
+- **Operacion:** correr `make valida-prospectivo` tras cada boletin nuevo ANTES de re-entrenar, para acumular desempeno OOS honesto. NO re-congelar cada semana (reiniciaria la prueba); re-congelar solo para fijar un nuevo punto de partida. Criterio: si OOS se mantiene ~ in-sample, la seleccion es valida; si OOS > 2x in-sample, migrar la seleccion a `smape_prod` (CV rolling) o a forecast bloqueado corte fin-2025.
 
-No ejecutar `make update-week` para Obesidad. No reentrenar, retunear, reseleccionar,
-refitear ni modificar gate, candidato, control, release o umbrales.
+### Tableau y Modelo Productivo
+- `scripts/build_tableau.py` genera `data/processed/tableau.csv` con datos de los 4 modelos.
+- Seleccion automatica de `modelo_productivo` basada en SMAPE por grupo (padecimiento, entidad, modo).
+- Columnas: `yhat` (mejor prediccion, entero), `modelo_productivo`, `yhat_{modelo}` (enteros), `{metrica}_{modelo}`, metricas standalone.
+- Todas las columnas `yhat*` se redondean a enteros antes de guardar (no existen fracciones de caso).
+- Metricas calculadas in-situ desde `y_real` vs `yhat_{modelo}` (no depende de `*_completo.csv`).
 
-### Anorexia F50
+### MLflow (Experiment Tracking)
+- Integracion opcional: `pip install -e ".[mlflow]"`. No-op si no esta instalado.
+- `epiforecast/utils/mlflow_logger.py`: wrapper que registra cada run de entrenamiento (metricas, parametros, tiempo).
+- Se invoca automaticamente en `scripts/entrena.py` despues de cada modelo entrenado.
+- Runs almacenados en `mlruns/` (local, no requiere servidor). Visualizar con `mlflow server --backend-store-uri ./mlruns`.
+- Naming: `{modelo}_{padecimiento}_{entidad}` (ej: `stacking_Depresion_Baja California`).
+- Metricas registradas: rmse, mae, mape, smape, mase, elapsed_seconds.
 
-F50 probó N+1 por configuración. Permanece `configured`, `channels: []`,
-`training_engines: []`, `eligible_engines: []` y `gallery_enabled: false`. Un
-smoke funcional no es una afirmación productiva.
+### CI/CD (GitHub Actions)
+- `ci.yml`: `quality` (ruff+mypy) → `test` (todo lo no `slow/integration`, con cobertura)
+  → `integration`.
+  Los dos primeros corren en push a main/refactor/*, PRs y el cron de los **lunes 06:00 UTC**.
+  **`integration` SOLO con `workflow_dispatch`**: es el carril legacy, exige la cadena sellada
+  de `runs/` (gitignored) y en un runner limpio se salta el 87% de sus pruebas; aparece como
+  **omitido** en las corridas programadas en vez de reportar un verde que no se comprueba.
+  `concurrency` agrupa por `event_name` y **exime al `schedule` de la cancelación**, para que un
+  push a main no se lleve por delante el run semanal.
+- `scrape_boletines.yml`: Scraping diario automatizado de boletines SINAVE (Selenium + Chrome).
+- `process_boletines.yml`: Procesamiento de PDFs con Camelot, merge al dataset consolidado.
+- `gsheets.yml`: Publicacion de datos Tableau a Google Sheets (service account).
 
-## 4. Dos arquitecturas que no deben mezclarse
+### Dengue (4.o padecimiento, EN PRODUCCION)
+> Estado: COMPLETO y en vivo. Serie 2018-2026, 4 motores cohort-aware, productivos DeepAR+Prophet, web en epiforecast.mx/dengue y EpiBot responde Dengue (handler `answerDengue`). Detalles abajo.
+- **Cohorte:** `epiforecast.constants.NEURO_CONDITIONS` = [Depresion, Parkinson, Alzheimer] es la cohorte neurologica de produccion (333 modelos). Dengue se incorpora con pipeline propio. Usar `epiforecast.utils.cohorts.is_neuro(pad)` / `filter_neuro(df)` para distinguir (NO repetir `df.isin(NEURO_CONDITIONS)`). Los flujos neuro (filter modo "General", entrena, reselect_motor_2026, genera_validacion_semanal, build_web_knowledge, build_tableau) filtran a la cohorte neuro; Dengue se entrena solo con `padecimiento.tipo='Dengue'` explicito.
+- **Extraccion:** Dengue vive en una tabla aparte del boletin (Cuadro 7.2, 3 severidades A97.0/A97.1/A97.2) que `dengue_extractor.py` agrega en un solo "Dengue". Soporte esquema OMS 2009 (A97.x) con dos layouts segun el año: **producción 2020+** (12 col, "acum. año anterior" por severidad) e **histórico 2018-W27..2019** (10 col, "acum. año anterior" solo en la 1ª severidad, etiquetas M/F; ver `dengue_historico.py`); el branch por año en `extract_dengue_from_pdf` conmuta reshape/validación. Serie resultante: **2018-W27..2026 (~391 sem nacionales)**. El esquema viejo OMS 1997 (A90/A91, 2014→2018-W26) usa otra tabla (por estatus de caso Confirmados/En Estudio, layouts de 2 bloques en 2014-2015 y 3 en 2016-2018H1) y NO se mergea al pipeline de producción (cambia taxonomía y definición). `_SOURCE_CORRECTIONS` corrige erratas de fuente conocidas (Zacatecas 2024-W41).
+- **Serie histórica A90/A91 SEPARADA (contexto/EDA, NO entrena):** `dengue_historico_a9091.py` extrae Dengue **confirmado por sexo** del esquema viejo por **posición** (pdfplumber: camelot/extract_table fallan porque el espacio es separador de miles). Agrupa palabras en renglones por hueco vertical y en columnas por banda de x; suma SOLO las columnas con encabezado M/F (confirmados del año en curso, excluye año anterior y "En Estudio"); valida vs el renglón TOTAL impreso. `make dengue-historico-a9091` -> `scripts/extrae_dengue_a9091.py` -> `data/interim/dengue_a90a91_{historico,nacional,manifest}.csv` (gitignored, regenerables; `Padecimiento="Dengue_A90A91"`). Cobertura validada ~226/235 sem 2014-2018H1.
+- **Pipeline Dengue (Makefile):** `make dengue-extract` -> `make dengue-merge` (+ dvc add/push del consolidado + commit .dvc) -> `make dengue-prep` (lee del CONSOLIDADO via override `data.raw_data_file`, NO del data_raw.csv neuro) -> `make dengue-train-estatal MODELO=<prophet|deepar|ensemble|stacking>` (los 4) -> `make predict-all ARGS="padecimiento.tipo='Dengue' padecimiento.modelado_hibrido=False"` -> `make dengue-produccion` (selector DeepAR/Prophet) -> `make dengue-web`. **`make dengue-web` tambien regenera `knowledge.json` (via `build_web_knowledge.py`, que incluye la seccion `dengue` del EpiBot) y lo copia a `epibot/knowledge.json`** — el EpiBot ya responde sobre Dengue (handler `answerDengue`) y asi no queda stale tras un boletin nuevo; si tocas `kb.js`/`entities.js` sube el cache-bust `?v=N`. O `make dengue-pipeline` (extract+merge+prep). El `Makefile` ya usa `.venv/bin/python` por default (`PYTHON ?=`); ya NO hace falta pasar `PYTHON=.venv/bin/python` (override con `make ... PYTHON=python3` si tu venv ya está activo).
+- **Helper de cohorte:** `epiforecast.utils.cohorts.is_count_log_cohort(pad)` (hoy = Dengue) centraliza el literal: la cohorte de conteos-log activa log_transform, desactiva normalizar_tasa, acota con el clamp estacional e invierte el log en predict. Usar este helper, NO `== "Dengue"` repetido.
+- **Modelado Dengue (per-cohorte, neuro intacto):** grid `dengue` en `prophet.yaml` (multiplicativo, `changepoint_prior_scale=0.05` FIJO) + `_GRID_KEY_MAP`. SIN holiday COVID, cv_weights uniformes, SIN fallback regional ("si es 0, es 0"). **Prophet Dengue va CON log_transform y SIN normalizar_tasa** (cohort-aware en `prophet/model.py`: `is_neuro(pad) or pad=="Dengue"`): sin log la tendencia multiplicativa colapsa a ~0 al extrapolar, y la tasa/100k comprime la señal en log → ratio yhat/real nacional 0.00 → 1.01 con el fix. La inversión expm1 en predict requiere que `ForecastModelLoader` reciba `padecimiento` (predice.py lo pasa SOLO para Dengue; neuro conserva su path histórico padecimiento=None, byte-idéntico).
+- **Prophet Dengue lleva regresor El Niño/ONI** (`src/epiforecast/data/enso.py`, cohort-gated `is_count_log_cohort`; neuro byte-idéntico). El ciclo inter-anual del dengue sigue a ENSO (señal ausente en los conteos): backtest leave-one-epidemic-out nacional SMAPE 102→76 (pico 2024 ratio 1.61→0.87). ONI futuro = observado + persistencia amortiguada hacia neutral (o `data/external/oni_forecast.csv` IRI). Config `enso_regressor`/`enso_lag_weeks=16` en `prophet.yaml`.
+- **Nuevo motor `nbglm` (Negative-Binomial GLM + Fourier + ONI), `src/epiforecast/models/nbglm/`:** count-correcto, extrapola sin divergencia (Fourier paramétrico), determinista, con regresor El Niño. **El mejor del estudio** (backtest leave-one-epidemic-out SMAPE 52 vs Prophet+ENSO 76 vs Prophet 102). `predict()` emite ajuste in-sample + futuro (producción evalúa el ajuste 2026 H1); fallback constante para series degeneradas. Probados y DESCARTADOS por empeorar: bridge a 2014 (otra definición/régimen) y NegBin en DeepAR.
+- **Ronda W37 (ENMIENDA_DENGUE_NBGLM_W37, 13-oct-2026): NBGLM SUSPENDIDO** por inestabilidad recursiva (45/99 pronósticos W37 > 3× el máximo histórico o en el tope 50000). Elegibles: Prophet y DeepAR; asignación fuera de muestra W28–W37 = DeepAR 53 / Prophet 46. Los generadores públicos derivan los motores productivos de `produccion_dengue.csv`; la comparación de la galería excluye NBGLM y rotula Ensemble/Stacking como no elegibles. Lo que sigue es el histórico previo.
+- **Producción Dengue = DeepAR + Prophet + NBGLM** (selector `scripts/produccion_dengue.py`, por serie vía SMAPE 2026 real alineado por semana ISO; **distribución DeepAR 46 / NBGLM 31 / Prophet 22, Nacional=DeepAR** — NBGLM gana 31 series, el nacional sigue DeepAR porque 2026 es año bajo y los motores con ENSO anticipan más magnitud). Ensemble y Stacking siguen FUERA (árboles no extrapolan). **Ensemble y Stacking quedan FUERA**: los árboles (XGBoost/LightGBM) no extrapolan la dinámica epidémica a 52 sem (divergen ~33x/99x) y el log1p amplifica el overshoot. Guard `forecast_guards.clamp_seasonal_envelope` (cohort-aware Dengue) los acota a la envolvente estacional histórica (33x/99x→~10x) pero NO se eligen como productivos.
+- **CAVEAT de leakage en la selección (auditoría 2026-06-05, ver `docs/research/hallazgos/DENGUE_AUDITORIA_LEAKAGE.md`):** la métrica `smape_real_2026` con la que `produccion_dengue.py`/`reselect_motor_2026.py` eligen motor es **in-sample**, no OOS: el modelo final se entrena sobre la serie COMPLETA incluyendo 2026 H1 (`run()` hace `self.fit(self.serie)`; el corte `FECHA_CORTE_ENTRENAMIENTO=2025-01-01` solo parte train/test para CV) y `predict()` emite el ajuste in-sample de 2026; la selección compara ese ajuste vs el real 2026 → optimista + sesgo de selección (mejor de 3-4 motores sobre el mismo periodo). **Mismo patrón en neuro (333 series).** El **backtest** NBGLM (`dengue_backtest.py`, leave-one-epidemic-out, ONI `as_of=cutoff`) SÍ es limpio: la afirmación "NBGLM es el mejor" se sostiene. Decisión 2026-06-05: NO corregir, validar prospectivo OOS en las próximas 4-8 semanas no vistas (pendiente: congelar el forecast vigente antes del re-entrenamiento semanal). Fix futuro si OOS>2x in-sample: seleccionar por `smape_prod` (CV rolling, ya honesta) o por forecast bloqueado corte fin-2025.
+- **Horizonte Dengue: 1 año productivo (52 sem), sin proyección multi-año.** DeepAR no puede más (`past_length=context+lags+pred_length > 390 sem de datos`). La antigua proyección NB-GLM a 5 años (`build_dengue_forecast_web.py`, `predict(freeze_trend=True)` ajustado durante el build) y el escenario El Niño (`dengue_pronostico_nino.py`) se **retiraron del producto público en la ronda W37** (ENMIENDA_DENGUE_NBGLM_W37, 13-oct-2026): son el mismo predictor recursivo suspendido, congelar la tendencia no elimina su realimentación y no tienen validación propia. `dengue_forecast.json` sólo trae `historico`, `historico_contexto` y `pronostico` (52 sem); `make dengue-web` ya no invoca el escenario, que se niega a escribir sin `--escenario-no-validado`.
+- **DeepAR Dengue:** bloque `short_series` en `deepar.yaml` (cohort-aware via `is_neuro`): cohortes de menor historia que la neuro usan context_length=104, lags acotados (`max_lag=53`, conserva el lag anual), CV ligera (2x26) y `gap_fill=interpolate` (semanas sin boletin se interpolan; semana real con 0 se conserva en 0). DeepAR usa CUDA (SageMaker) > CPU; MPS (Apple Silicon) queda DESHABILITADO por defecto (ops de muestreo StudentT no implementados en MPS + riesgo de deadlock con procesos concurrentes); forzar con `deepar.allow_mps: true`. NO correr dos entrenamientos DeepAR locales concurrentes.
 
-### Legacy publicado
+### Carril E66 / Obesidad (runner genérico aislado — NO productivo, NO-GO)
+> **Obesidad (E66) es NO-GO**: no se entrena de verdad, publica, `git push`, `dvc add/push` ni se marca `published` sin **OK formal explícito**. Este carril vive APARTE del pipeline neuro/Dengue (no lo toca; legacy byte-idéntico). Desde **2026-08-18 el carril vive en `main`**: ambos repos convergieron a una sola rama y la rama `feat/registry-padecimientos-obesidad` se borró tras quedar contenida en main (CI verde). **Integrar el código NO publica Obesidad**: lo que la mantiene invisible es el gate de lifecycle (`trained` + `gallery_enabled: false`), que es configuración y viaja con el código; verificado en vivo (0 menciones en el sitio). Cada micro-commit se revisa por diff.
 
-- Modelos: `src/epiforecast/models/`.
-- Factory: `src/epiforecast/models/factory.py`.
-- Artefactos: `models/`, `reports/forecasts/`, `reports/ProdDetails/`.
-- Consumidores: Tableau legacy, web, EpiBot y validación semanal.
-- Targets históricos: `train-*`, `predict-*`, `tableau`, `update-week`.
+- **Datos nuevos (`src/epiforecast/data/`)**, sin tocar el legacy:
+  - `epi_calendar.py`: calendario **MMWR** (semana dom→sáb; `weeks_in_year`, `week_start`, `shift`, `ds_for`, `target_period(observation_lag_weeks)`). Semanas verificadas: 2020/2025=53, 2021-24=52.
+  - `epi_geo_exposure.py`: catálogo geográfico TRACKEADO `config/geografia/entidades_mx.csv` (32 entidades; `macroregion_id` identidad ≠ `macroregion_name` display, sin slugify) + snapshot de exposición `inegi_cpv2020_static` (`config/exposicion.yaml`, join estricto 1:1 + digest). `GeoCatalog`: resolve/entity/cve_ents/macroregion_ids/states_in_macroregion/macroregion_of.
+  - `epi_reconcile.py`: reconciliación causal H+M=total (deltas de acumulados, fallbacks, imputación).
+  - `epi_dataset.py`: `build_epi_dataset_v2(disease)` → **41,792 filas** (32 estados × 2 sexos × 653 periodos, 2014-W01..2026-W26), versionado en `runs/<dataset_id>/`.
+  - `epi_aggregate.py`: `build_products` deriva **111 productos** (64 base + 32 estado-general + 12 región[4×3sexos] + 3 nacional) SOLO de las 64 bases; reconciliación con **tolerancia cero**.
+- **Runner genérico (`src/epiforecast/runner/`)**:
+  - `contracts.py`: **único** `SeriesKey` + `TrainingSpec` (solo 64 bases) + validadores `ForecastFrame`/`EvaluationFrame`/`MetricFrame` (fila-a-fila; intervalos conjuntamente nulos/válidos, no negativos; NaN+flag nunca inf).
+  - `manifest.py`: `DatasetManifest` (`runs/<dataset_id>/`) + `RunManifest` v1 (`runs/<run_id>/`, dir DISTINTO). `dataset_id`=digest del dataset; `run_id`=digest(dataset+comando+stage+política+motores+seed+commit). Escritura atómica.
+  - `policy.py` + `config/evaluation/rolling_cv_v1.yaml`: backtest OOS rolling-origin declarativo (folds dev 2021-24 de 52 sem, ≥260 previas; test 2025/stress 2020/prospective 2026 solo reporte). **sMAPE principal**; MASE lag-52 **train-only**.
+  - `evaluation.py`: derivación 64→111 de pronósticos (recon `atol=1e-9`) + alineación verdad↔pred + métricas zero-safe (sMAPE/MASE/MAE/RMSE/WAPE**%**/bias firmado).
+  - `engines/` = **harness compartido** (`harness.py`) + motores; cada motor solo aporta su `PredictFn(SeriesRequest)->SeriesForecast`. `SeriesRequest` lleva el **`TrainingSpec` real** (SeriesKey, fold, digests dataset/política, seed, horizonte, `TransformContract`, params, límites) + `train` **cortado estrictamente en `fold.train_end`** (ningún predictor ve el holdout: la invariancia post-origen es estructural) + holdout + origen. El harness valida por serie: cobertura EXACTA del holdout, casos finitos y no negativos → si no, rc≠0. `SeriesForecast.diagnostics` (opcional) → `fit_diagnostics.csv` (una fila por serie/fold, con `n_train` + `transform_digest` + `config_digest`). `spec.json` registra `engine_params`/`resource_limits`/`transform`/`transform_digest`/`config_digest`/`n_diagnostics`. Registrados: `seasonal_naive_lag52`, `seasonal_{mean,median}_{3,5}y` (`config/engines/seasonal_windows.yaml`), `ets_add_damped_log1p` (`config/engines/ets.yaml`) y `ridge_harmonic_log1p` (`config/engines/ridge_harmonic.yaml`). Adapters declaran `supports()` (solo benchmark; refit/forecast → **rc=3**). Invariantes compartidos, una sola implementación: `harness.train_series` (contigüidad MMWR del train, fail-closed) y `evaluation.smape_percent` (fórmula única de sMAPE, la usan el MetricFrame y la validación interna de los motores).
+  - **Motor ETS `ets_add_damped_log1p`** (primero que AJUSTA de verdad: 64×4 = **256 ajustes OOS**): statsmodels Holt-Winters, tendencia aditiva **amortiguada** + estacionalidad aditiva periodo 52, init estimada, optimizado, sin `remove_bias`. log1p/expm1 **gobernados por el `TransformContract`**, nunca hardcodeados. Reintento **único** declarado (variante sin tendencia) si la primaria no converge, emite `ConvergenceWarning` o su pronóstico no es usable; si ninguna variante da conteos finitos no negativos → `EtsFitError` → **rc≠0** (sin clipping, sin redondeo, **sin fallback a cero/Seasonal Naive**: por eso NO se reutiliza el `ETSExpert` legacy, que devuelve ceros). Fail-closed también ante hueco en el train o < 2 estaciones. Limitación declarada: periodo 52 fijo → los años MMWR de 53 semanas (2014/2020/2025) desplazan la fase una semana.
+  - **Motor Ridge armónico `ridge_harmonic_log1p`** (primero que SELECCIONA hiperparámetros): `sklearn.Ridge` solver **svd** (cerrado, determinista) sobre log1p; diseño = tendencia lineal estandarizada + armónicos de Fourier del **ds MMWR** (periodo 365.25 d), **sin lags**. **Selección temporal interna**: las últimas 52 semanas del train exterior son inner-validation, la rejilla (orders [2,4,6] × alphas [0.1,1,10] = 9) se ajusta sobre el inner-train, se puntúa con **sMAPE en casos** y se desempata por **menor orden → mayor alpha**; luego refit sobre TODO el train exterior. El escalador se ajusta con el set de ajuste de cada fit: **el holdout nunca entra en la selección**. Candidato con conteos negativos/no finitos = inválido (se descarta, **no se recorta**); sin candidatos válidos o refit inutilizable → `RidgeFitError` → **rc≠0**. Diagnóstico: orden, alpha, sMAPE interna, `n_inner_train`/`n_inner_validation`, candidatos totales/válidos, norma de coeficientes e intercepto; `spec.json` registra la versión de scikit-learn.
+  - **Motores Prophet `prophet_{count,rate}_log1p`** (`config/engines/prophet.yaml`; NO es el `config/models/prophet.yaml` legacy): dos perfiles idénticos salvo su `TransformContract` — conteo+log1p frente a **tasa/100k+log1p** (escala del registry). Ajuste **MAP** (`uncertainty_samples=0`, `mcmc_samples=0`), crecimiento lineal, estacionalidades nativas **desactivadas** y una sola declarada `annual_mmwr` de 365.25 d sobre el ds MMWR. **Sin ENSO, sin holidays COVID, sin regresores**; no reutiliza CV, pesos ni fallbacks del `ProphetForecaster` legacy. Hiperparámetros **congelados por el comando `tune`**: el benchmark nunca reabre la rejilla y sin `frozen` falla cerrado. Pronóstico negativo/no finito o ajuste fallido → rc≠0. `spec.json` guarda las versiones de prophet y cmdstanpy.
+  - **Comando `tune`** (`runner/tuning.py`, genérico): congela hiperparámetros ANTES del benchmark, sobre el mismo corte causal (reutiliza `harness.series_requests`). **Centinelas deterministas**: media semanal del TRAIN del fold (nunca el holdout), orden por (media, `geography_id`), y por sexo mínimo/mediana superior/máximo → en E66 hombres 29/31/15 y mujeres 29/11/15. Rejilla completa sobre los 6 centinelas; una configuración es válida solo si las 6 dan pronóstico utilizable. Selección **declarativa**: mediana → media de sMAPE y luego los desempates del YAML del motor. Sin ninguna válida → rc≠0 (jamás congela un default mudo). Artefactos: `sentinels.csv`, `tuning_results.csv`, `selected_config.json`, `tuning_spec.json`.
+  - **Exposición**: `SeriesRequest` lleva `train_exposure` y `holdout_exposure` por periodo. La del holdout SÍ viaja (es el denominador poblacional del periodo objetivo, no una observación futura del target); los casos del holdout nunca. Si el contrato requiere exposición, el harness exige cobertura exacta y valores finitos positivos.
+  - **Telemetría ≠ resultados**: la duración por serie es wall-clock y no puede ser byte-reproducible, así que vive en `jobs/<engine>.fit_timing.csv` (**sin digest**, no es artefacto) y no debilita el gate "mismos digests entre corridas". Los subprocess de motor se lanzan con **un solo thread numérico** (OMP/OPENBLAS/MKL/NUMEXPR/VECLIB=1).
+  - `report.py`: `comparison.csv` (mediana sMAPE/MASE bases/111/nacional + runtime + mejora vs baseline; **no elige ganador**).
+- **CLI `python -m scripts.disease_run`** (todo bajo `runs/<...>/`, gitignored):
+  - `validate-data Obesidad` → dataset + 111 productos (FUNCIONAL, rc0).
+  - `benchmark Obesidad --stage smoke|full [--engines a,b] [--allow-dirty]` → un subprocess LIMPIO por motor; el run oficial exige **árbol trackeado limpio** (`--allow-dirty` para dev). Reanudación solo si el job está succeeded + artefactos **re-verificados en disco** (un .pkl no cuenta).
+  - `tune Obesidad --stage smoke|full --engines a,b` → congela hiperparámetros por motor (centinelas + rejilla); solo lo soportan los motores que lo declaran (el resto → **rc=3**).
+- **Baselines canónicos** (commits limpios): Seasonal Naive `obesidad_benchmark_full_7952e226c10a` @ `cf97301b`; run conjunto 5 motores `obesidad_benchmark_full_fc70f5f15b7b` @ `1e0709fd`; run 6 motores `6ff688593915` @ `52fc07af`; run 7 motores `b0c4b6e18c50` @ `7ff41b04`; **run vigente 9 motores `obesidad_benchmark_full_301981b4c42c` @ `08d554cd`**. Mediana sMAPE_all: naive 39.5 · median_3y 36.7 · mean_3y 32.5 · **prophet_count 31.9** · ETS 30.0 · **prophet_rate 28.5** · median_5y 28.3 · **mean_5y 28.02** · **Ridge 28.00 (−29.07%)**; en las 64 bases: mean_5y 28.99 < Ridge 29.70 ≈ median_5y 29.71 < prophet_rate 30.24 < ETS 30.50 < prophet_count 32.09. `prophet_rate` es el **mejor en nacional General (19.58) y en MASE_all (0.81)**. Cada motor: 13,312 predicciones base / 23,088 derivadas / 444 métricas / **solo 64 modeladas** / `n_train` por fold 366/418/470/522; los cuatro que ajustan emiten 256 diagnósticos. **Tuning oficial** de Prophet: `obesidad_tune_smoke_3398a12d14c8` @ `a72acf27` (36 configs × 6 centinelas = 216 ajustes por perfil, 36/36 válidas; ambos perfiles congelan additive · cp=0.01 · sp=0.5 · Fourier=5). Los 7 motores previos conservan `metrics.csv` **byte-idéntico**. Verificado reproducible: mismo `run_id` y los 40 artefactos con el mismo digest en otro `runs_root`. **Sigue sin elegirse ganador** (la selección por SeriesKey con umbral de 5% es C5).
+- **Registry**: Obesidad declara `training_engines=(prophet,deepar,ensemble,stacking)` (legacy, NO gobierna el benchmark) y `selection_policy=rolling_cv_v1`, `exposure_source_id=inegi_cpv2020_static`, **`lifecycle=trained`** (C5 cerrado; nunca `published`).
 
-Esos targets existen, pero no son recetas universales ni son aptos para Obesidad. Varios
-escriben rutas canónicas, DVC, S3 o superficies públicas.
+### Carril N+1 — Anorexia F50 (C6: demostración, NO productiva)
 
-### Runner/release genérico
+> **F50 es una DEMOSTRACIÓN de N+1**: se dio de alta **sin una línea de Python**, para probar que el
+> runner absorbe un padecimiento nuevo por configuración. `lifecycle=configured`, `channels: []`,
+> `training_engines: []`, invisible en todo filtro `published_only`. NO-GO como Obesidad.
 
-- Datos: `epi_calendar.py`, `epi_geo_exposure.py`, `epi_reconcile.py`,
-  `epi_dataset.py`, `epi_aggregate.py`.
-- Contratos y manifests: `src/epiforecast/runner/`.
-- Engines: seasonal naive/windows, ETS, Ridge armónico y Prophet count/rate.
-- Publicación: `src/epiforecast/publication/`.
-- Releases: `artifacts/releases/<disease>/<release_id>`.
-- Observaciones: `artifacts/observations/<disease>/<dataset_id>`.
+- **Alta por configuración** (`c5803acd`): perfil `baja_incidencia_semanal` en `config/padecimientos.yaml`
+  (conteos, `rate_scale` disponible pero **ningún motor en tasa**, y TODOS los traits legacy apagados —
+  sin log1p/COVID/ENSO/clamp/short_series y **sin `fallback_regional`**, que en baja incidencia sería lo
+  peor) + entrada `anorexia_f50` (CIE F50, alias clínicos incl. TCA/bulimia, grupo `trastornos_nutricion`,
+  exposición `inegi_cpv2020_static`, política **`rolling_cv_v1` reutilizada intacta**). En
+  `config/data/cuadros.yaml` cambia **solo** `onboard: false → true`: F50 es el **bloque 1** del cuadro
+  14.1, co-ubicado con Obesidad (bloque 0).
+- **Extracción** (`scripts/extrae_cuadro --disease anorexia_f50`): 654 PDFs → **653 ok**, único fallido
+  `2014_sem01.pdf` (`no_page`); **20,896 filas**, 32 entidades por boletín, 0 duplicados, fuente
+  2014-W02…2026-W27; layouts **53** de 3 columnas y **600** de 4; una sola ausencia de `Casos_semana`
+  (Querétaro 2016-W50) y 1,696 ausencias esperadas de año anterior. **Determinista**: dos corridas
+  independientes dan `sha256 2a7bb815…` byte a byte. Copiado tal cual a `data/raw/data_raw_Anorexia_F50.csv`
+  (sin `merge_cuadro.py`, sin tocar el consolidado, sin operaciones DVC).
+- **Guard anti-confusión de bloque** (imprescindible): como F50 y Obesidad salen del MISMO cuadro, todos
+  los conteos del gate pasarían igual leyendo el bloque equivocado. Contraste directo: **0.2%** de celdas
+  coinciden (35 de 20,896) y los totales difieren 160× (**47,143** vs 7,542,552).
+- **Dataset** `anorexia_f50_05a3b9cfde27`: 41,792 filas base / 64 series / 653 obs por serie
+  (2014-W01…2026-W26), 72,483 filas y 111 productos, 47 derivados; 1 total estado-periodo imputado
+  (Querétaro) → 2 filas base; cero negativos o nulos; general=H+M, Σ estados=región, Σ regiones=nacional.
+  **57.3% de ceros**: son datos de baja incidencia, nunca faltantes.
+- **Smoke OOS** `anorexia_f50_benchmark_smoke_06ee26150ba1` @ `7c374d49` (checkpoint funcional C6.2):
+  fold único `development_2024`, rc=0, **64 series base modeladas** y **cero series derivadas modeladas
+  directamente** (los 47 productos derivados SÍ se materializan, por suma de las bases), 3,328
+  predicciones base, 5,772 filas de evaluación sobre los 111 productos, 111 métricas, `n_fallback=0`,
+  `disease_id=anorexia_f50` en todo artefacto y
+  mismo `run_id`+digests en otro `runs_root`. **Sin umbral de sMAPE**: C6 demuestra reutilización
+  funcional, no calidad productiva (la mediana sale ~93, esperable en series casi-cero).
+- **Preservación verificada**: el diff de C6 toca `config/`, `tests/` y `CLAUDE.md` (documentación) —
+  cero cambios en `src/`, `scripts/`, frontend y `rolling_cv_v1.yaml` (digest `dd6d4a02…` intacto);
+  los 4 agregados legacy
+  byte-idénticos; runs canónicos C5 de Obesidad intactos; estado dirigido de DVC sin cambios.
 
-El runner entrena 64 bases (32 entidades × 2 sexos) y deriva 47 productos. Nunca
-entrenar directamente generales, regiones o nacional. Los outputs viven por run/release;
-no deben caer en rutas legacy por la existencia accidental de un PKL.
 
-## 5. Comandos y autorización
+### Convenciones de Codigo
+- **Imports**: Agrupar stdlib, luego terceros, luego locales (isort via Ruff).
+- **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
+- **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
+- **Lint**: Ruff con line-length=99, target Python 3.12.
+- **SRP**: Maximo 300 lineas por modulo. Unica excepcion documentada: `models/deepar/model.py` (complejidad inherente de GluonTS). Los God-modules de visualizacion se particionaron (metodo cubrir->partir, con tests smoke/estructurales de red): `comparison_builders.py` -> `comparison_panels` + `comparison_metrics` + `comparison_builders`; `comparison_bars.py` -> `comparison_bars_helpers` + `comparison_prod_bars` + `comparison_bars`; `avance5_charts.py` -> `avance5_panels` + `avance5_metric_charts` + `avance5_charts`; `avance5_tables.py` -> `avance5_data` (carga/merge/win-rate) + `avance5_tables` (markdown).
+- **Tests**: Pytest con cuatro marcadores — `unit` (funciones puras), `contract` (contrato entre
+  componentes o estado trackeado del repo), `slow` e `integration`. `--strict-markers` está activo:
+  usar un marcador sin registrarlo en `pyproject.toml` es un **error**, no un aviso.
+  **Gate de cobertura: `fail_under = 70` en `[tool.coverage.report]` es la ÚNICA cifra.** `--cov`
+  ya NO viaja en `addopts`: la cobertura se declara en el *call site* (job `Tests` y `make test`),
+  porque el piso global se aplicaba a cualquier invocación midiera lo que midiera — y eso tuvo el
+  cron en rojo 12 lunes con cero pruebas fallidas. `scripts/compliance_check.py` queda fuera a
+  propósito (`--cov-fail-under=0`): es diagnóstico con sus propios mínimos, no un consumidor del gate.
+  2,509 tests colectados en 136 archivos test; el último CI previo a los cuatro controles nuevos
+  colectó 2,505 y obtuvo cobertura **74.5%** (selección `not slow and not
+  integration`, medida en runner limpio). Ojo: en local, con `runs/` y el bundle restaurados, la
+  cifra sube varios puntos y los skips caen de ~500 a ~1 — **no confundir esa medición con la de CI**.
+- **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
-### Lectura y diagnóstico seguro
+### Dependencias Clave
+- **Core**: pandas, numpy, omegaconf, loguru, scikit-learn, rich, pydantic.
+- **Prophet**: prophet, cmdstanpy.
+- **DeepAR**: gluonts[torch], torch (PyTorch).
+- **Visualizacion**: matplotlib, seaborn, plotly, kaleido.
+- **Datos**: camelot-py, pypdf, reportlab, openpyxl.
+- **Infraestructura**: boto3, sagemaker (opcional), dvc[s3] (opcional), mlflow (opcional).
+- **Ensemble**: xgboost.
+- **Stacking**: lightgbm, statsmodels.
+- **EPI Console**: rich, google-generativeai.
+- **Dev**: pytest, ruff, mypy, pre-commit.
+- Instalar: `pip install -e ".[dev]"`. DVC opcional: `pip install -e ".[dvc]"`. MLflow opcional: `pip install -e ".[mlflow]"`.
 
-```bash
-git status --short --branch
-git diff --check
-git log --oneline --decorate -10
-.venv/bin/python -m scripts.prospective_status obesidad --check
-make lint
-make typecheck
-make test-fast
-```
+### Scripts Adicionales
+- `scripts/compliance_check.py`: Auditoria de calidad (Cookiecutter DS + SOLID + MLOps).
+- `scripts/excel_produccion_charts.py`: Graficos embebidos para Excel de produccion (6 PNGs).
+- `scripts/excel_produccion_fmt.py`: Formateo IMSS 2026 para workbook de produccion.
+- `scripts/genera_paneles_barras_prod.py`: Barras individuales del modelo productivo ganador.
+- `scripts/genera_paneles_barras_semana.py`: Paneles de barras semanales (2x2 grids).
+- `scripts/genera_paneles_zoom.py`: Paneles con zoom desde 2020.
+- `scripts/genera_validacion_semanal.py`: Validacion semanal Real vs Forecast (HTML).
+- `scripts/patch_train_metrics.py`: Parche metricas train en CSVs sin re-entrenar.
+- `scripts/scrape_boletines.py`: Scraper SINAVE (Selenium).
+- `scripts/ci_process_boletines.py`: Procesamiento CI/CD de boletines (Camelot).
+- `scripts/publish_gsheets.py`: Publicacion a Google Sheets.
 
-Validar proporcionalmente. Un cambio documental no requiere suite completa. Al reportar
-CI, distinguir runner limpio de local hidratado con `runs/` y bundle.
+### Modulos SRP (archivos extraidos para cumplir limite de 300 lineas)
+- `prophet/data_prep.py`: Funciones de preparacion de datos extraidas de `prophet/model.py`.
+- `ensemble/helpers.py`: Feature engineering, preparacion de datos y metricas extraidas de `ensemble/model.py`.
+- `stacking/experts.py`: Expertos individuales (ProphetExpert, ETSExpert, LGBMExpert) extraidos de `stacking/model.py`.
+- `stacking/meta_learner.py`: Meta-learner Ridge/ElasticNet con pesos no negativos extraido de `stacking/model.py`.
+- `visualization/comparison_report.py`: Generacion de reporte HTML extraida de `comparison_plots.py`.
+- `visualization/comparison_html.py`: Templates HTML del reporte comparativo (tablas, badges, hero, footer).
+- `visualization/comparison_css.py`: Estilos CSS del reporte comparativo (paleta IMSS 2026, badges diagnosticos).
+- `visualization/chart_constants.py`: Constantes de estilo (tamaños, margenes, alphas) extraidas de `forecast_chart.py`.
+- `visualization/chart_renderer.py`: Renderizado de series (capas, bandas, COVID, outliers) extraido de `forecast_chart.py`.
+- `visualization/chart_annotations.py`: Anotaciones (divisores, zona CV, ficha tecnica con deteccion automatica de modelo) extraidas de `forecast_chart.py`.
+- `visualization/avance5_data.py` + `avance5_tables.py`: carga de metricas + merge N-way + win-rate (data) y generacion de tablas/Markdown del Avance 5 (tables).
+- `visualization/avance5_charts.py` + `avance5_metric_charts.py` + `avance5_panels.py`: 6 builders puros de graficos del Avance 5 (tendencia/residuales en charts; importancia/barras/boxplots/heatmap en metric_charts; primitivas de capa en panels).
+- `visualization/comparison_{panels,metrics,builders}.py` y `comparison_{bars_helpers,prod_bars,bars}.py`: builders de comparacion multi-modelo particionados (capas, metricas/residuales, small-multiples/overlay, barras semanales y panel del ganador).
+- `features/demographic.py`: Feature builder demografico extraido para SRP.
+- `utils/mlflow_logger.py`: Wrapper opcional de MLflow para tracking de experimentos (no-op sin mlflow).
 
-### Escribe evidencia local; requiere alcance explícito
-
-```bash
-make readiness DISEASE=obesidad \
-  RELEASE=artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc
-```
-
-`readiness` no publica ni usa red, pero escribe bajo `runs/readiness/`; no ejecutarlo
-en auditoría read-only. Hoy debe regenerarse porque la evidencia conserva 1/4.
-
-### Prohibido sin autorización separada
-
-- push, PR, merge, tag, deploy o publicación;
-- `dvc add/push/pull/fetch`, global o dirigido;
-- `make data-*`, `models-push`, `forecast-push`, `s3-sync`,
-  `model-pipeline`;
-- `make train*`, `predict*`, `tableau`, `update-week*` para Obesidad;
-- escrituras Google Sheets, S3, Tableau o web pública;
-- activar lifecycle, puntero o `gallery_enabled`;
-- borrar, mover, añadir o sobrescribir untracked del usuario;
-- `dvc checkout --force` global;
-- reset o force-push de `main`.
-
-Rollback público: rama nueva + `git revert` + PR. Nunca reescribir historia.
-
-## 6. Tests y gates
-
-- Pytest: 136 archivos test, 2,509 nodeids; run vigente de `main`: 1,946 passed,
-  497 skipped y 66 deselected.
-- Markers: `unit`, `contract`, `slow`, `integration`.
-- `--strict-markers` activo.
-- Umbral único: `fail_under = 70`.
-- Job normal: `not slow and not integration`, cobertura explícita.
-- Integration legacy: manual; exige cadena y omite la mayoría en runner limpio.
-- CI instala `ghostscript` y `poppler-utils` tras `apt-get update`.
-
-Un gate debe poder fallar. El control negativo de cobertura elevó temporalmente el
-umbral a 99 y terminó con código 1 aunque las pruebas pasaron. No leer `$?` después de
-un pipe: sería el estado de `tail`, no de pytest.
-
-## 7. Datos, DVC y artefactos
-
-- Git gobierna código, configuración, manifests y punteros `.dvc`.
-- DVC/S3 gobierna datos y artefactos pesados.
-- `runs/` es gitignored y no es una fuente portable por sí sola.
-- Releases y observaciones tienen targets DVC dedicados.
-- «DVC verde» debe ser por target explícito; el estado global puede incluir WIP ajeno.
-- Nunca restaurar todo con checkout DVC global.
-- Antes de operar: resolver target, revisar diff, preservar evidencia y obtener permiso.
-
-Los borradores Tableau `.twb`, `.twbr` y `.hyper` no rastreados son del usuario. No
-borrar, mover, añadir ni sobrescribir. Ver
-`docs/ESTADO_TABLEAU_W31_2026-08-20.md` y `ORDENES.md`.
-
-## 8. Calidad de código
-
-- Python 3.12; Ruff line-length 99; imports stdlib → terceros → locales.
-- Mypy cubre `src/`, runner aislado y cuatro CLI C7 en CI.
-- Logging con `loguru` según la infraestructura existente.
-- No ampliar god-modules sin necesidad.
-- Usar `apply_patch` y revisar `git diff`.
-- No añadir condicionales por enfermedad si registry/perfiles resuelven el contrato.
-- Metadata/manifests gobiernan identidad; no inferirla del filename salvo adaptador
-  legacy explícito.
-- `published_only` es la frontera pública; probar inclusión y exclusión.
-
-## 9. Archivos gobernantes
-
-- Workspace: `/Users/haowei/Documents/Integrador/AGENTS.md`.
-- Contexto amplio: `CLAUDE.md`.
-- Registry: `config/padecimientos.yaml`.
-- Política OOS: `config/evaluation/rolling_cv_v1.yaml` — no editar comentarios: mueve
-  su digest.
-- C7: `docs/PLAN_C7_PUBLICACION_OBESIDAD.md`.
-- Arquitectura: `docs/PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md`.
-- Tableau: `docs/ESTADO_TABLEAU_W31_2026-08-20.md`.
-- Órdenes manuales: `ORDENES.md`.
-- CI: `.github/workflows/ci.yml` y `pyproject.toml`.
-
-## 10. Cómo retomar
-
-1. Confirmar worktrees y HEAD.
-2. Resolver C7 con `prospective_status --check`, no con una ronda vieja.
-3. Recordar: 4/4 no equivale a publicación; readiness está desfasado y externo bloqueado.
-4. Para CI, esperar el schedule del 7-sep y aplicar el árbol de decisión.
-5. Para skips: dobles guardas → política → fabricador sintético → D1.
-6. Para Obesidad: no reentrenar ni publicar; pedir la autorización exacta faltante.
-7. No mezclar artefactos legacy con runner releases.
-8. Actualizar esta guía si cambian lifecycle, gate, readiness, CI o ramas.
+### Articulos y Congresos (`Congresos/`, gitignored)
+- Los papers del proyecto viven bajo `Congresos/` y **NO estan en git** (`.gitignore` excluye `Congresos/`). Cuatro tracks: **MICAI** (`Congresos/MICAI/`, metodologico, depresion sola, LNCS ingles), **PLOS ONE** (`Congresos/OnePlus/`, sistemas/utilidad, 3 padecimientos, espanol), **WCP/Mundial** (`Congresos/Mundial/`) e **IMSS/Protocolo**.
+- **PLOS ONE:** manuscrito en `Congresos/OnePlus/PLOS_build/latex/manuscrito_plos.tex`; envio generado con `scripts/build_submission.py`; guard de integridad cientifica `scripts/verify_ruta_b.py` (de-escalada Ruta B: la comparacion entre motores no es homogenea y las metricas CV de DeepAR son in-sample). Estado detallado, decisiones y pendientes: en la memoria del asistente (`project_plos_one_submission.md`), no aqui.
+- **No duplicar entre papers:** MICAI (depresion, metodo) y PLOS (3 padecimientos, sistema) comparten el hallazgo "el ganador in-sample no persiste OOS"; enmarcar distinto y declarar el relacionado en Editorial Manager (ver `Congresos/OnePlus/COMPARACION_MICAI_PLOS.md`).
