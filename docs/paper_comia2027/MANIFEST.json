@@ -1,5 +1,5 @@
 {
- "commit_origen": "61d0de80787f9e81c9b428f6b2616470217d74d8",
+ "commit_origen": "abef0bc05dba6c4ac4a0472aec8dae375c93b5e8",
  "arbol_limpio": true,
  "codigo": {
   "scripts/banco_ampliado.py": "1bf09a174728ec977e5ca70bd78e92235a6e2edca2fbb4cddbe72917ec9a5d16",
@@ -7,7 +7,7 @@
   "scripts/banco_optuna.py": "f1ed4ee4d2319b772610377e0449f4cd9ba524c896ecb62af41c34deb747a2ea",
   "scripts/banco_optuna_evalua.py": "9855a445488e4610dcf15f196575626cae120d75e4427bbc95c465a37647821a",
   "scripts/banco_sensibilidad.py": "1f55a6b2342011e274d53cbfd62235aaa1a79bb986a73275388ac58be513cb34",
-  "scripts/paper_comia_evidencia.py": "b4e7c195dd0f2f891b535519c496feb9f1a9d7d948012cac3435e58d2b5648df",
+  "scripts/paper_comia_evidencia.py": "518b5d51fb1376de2b195031d7b7326cb7592b985f3876ffe46133fb861722c1",
   "scripts/paper_comia_paquete.py": "d2a33a031f0d0b2f2718daa477849db4191c0e737eae97d4d9fb8504a40e4394",
   "src/epiforecast/banco/ajuste.py": "161489ff07c7ffc287be31a7c06405108f605aa5e27ee46100c4686e80e1e491",
   "src/epiforecast/banco/ajuste_flujo.py": "472166e61b31a03d4bd88e94b409225bf8c63fd3eb97cc778299ed59e88412d5",
@@ -17,10 +17,11 @@
   "config/banco/banco_ampliado_v1.yaml": "6615c238e44cb2969532a31edffe1fc3f5a46d8f2e3eb979b32bfed31c069dd5"
  },
  "archivos": {
-  "README.md": "e282ab868fd22f38c03418293a113c3cc9a5ef4a9eebfcedb7a8cae17bbbc326",
+  "README.md": "4ed754cd41746d53dbc4c687d7c559a88bdefaf31c3d11c6da88402cb7e0be00",
+  "evidencia/actividad_diaria.csv": "4ce14c7b3672af1e458f987022772668ccf6bf54c12a43921676ca1b0ab937c5",
   "evidencia/cronologia.csv": "170d84ccebfb8cccb2ce39bdbd60cabea56df2e56990eb54f91b22d0c3708e86",
   "evidencia/padecimientos.csv": "6af98b5dd65cb88347cd57d4fa5536e24de07fe11aa5608ab0cf906a8a29323b",
-  "evidencia/resumen.json": "e8e112ea58c93bd9979fbfc3bcce5ba28f555715fcd3951739dde775c01e05dd",
+  "evidencia/resumen.json": "ee7b671ab1a308207e4d2deeaffde694d077d79ec8a4b5a721c48ff043a77f53",
   "figuras/cronologia.png": "0439c4168f1b8ff90c2e34a998aa9d1fece548897a0e04adea14f4a5280c88cd",
   "figuras/diferencia_critica.png": "2d118851c32efbe24f948b9c5fc342929c1758965369bb1081ef693d5b113334",
   "figuras/mejora_vs_naive.png": "59f712345c1d4f2ef2e0881abae19c84fa1ced952653229e4f323c0f56d3526f",

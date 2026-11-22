@@ -84,6 +84,8 @@ Todas las cifras son de desarrollo y vienen de los archivos indicados (copias en
 | Releases sellados en disco | 158 (incluye 10 reemplazados) | idem |
 | CI del backend | 555 corridas: 413 éxito, 81 fallo, 61 canceladas | idem |
 | PR fusionadas | 98 backend, 103 frontend | idem |
+| Actividad diaria | commits de main, PR fusionadas (backend y frontend) y corridas de CI por día | `evidencia/actividad_diaria.csv` |
+| Estado del registry | 152 publicados, 1 entrenado, 1 configurado (154 entradas) | `evidencia/resumen.json` |
 
 ### P2. Banco de 30 motores (`resultados/banco/`)
 
