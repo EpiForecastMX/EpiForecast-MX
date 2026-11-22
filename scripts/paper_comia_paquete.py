@@ -38,6 +38,7 @@ COPIAS = {
     EST / "titular_interseccion.csv": "banco/titular_interseccion.csv",
     EST / "contra_naive_lag52.csv": "banco/contra_naive_lag52.csv",
     EST / "contra_naive_lag52_bases.csv": "banco/contra_naive_lag52_bases.csv",
+    EST / "contra_naive_lag52_wape_bases.csv": "banco/contra_naive_lag52_wape_bases.csv",
     EST / "contra_media_52s.csv": "banco/contra_media_52s.csv",
     EST / "por_pliegue.csv": "banco/por_pliegue.csv",
     EST / "por_estrato.csv": "banco/por_estrato.csv",

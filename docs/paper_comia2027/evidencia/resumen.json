@@ -52,10 +52,10 @@
   "rolling_cv_historia_corta_v1",
   "rolling_cv_v1"
  ],
- "commits": 1737,
+ "commits": 1738,
  "merges": 107,
  "primer_commit": "2025-12-21",
- "head": "3e8c7dca8aa634b825275a6a3afa9b95732fd4de",
+ "head": "4b1c38baa1dcdcfa5ed303d236e9280260112d06",
  "archivos_de_prueba": 203,
  "definiciones": {
   "fecha_alta": "runner: primer commit de main (first-parent) que agrega el puntero de release público; legacy: creación del registry (línea base t0)",
