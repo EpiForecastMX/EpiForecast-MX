@@ -1,11 +1,11 @@
 """Política v2 en sombra: retroprueba en desarrollo, emisión congelada y validación prospectiva.
 
 No publica ni reentrena. Uso:
-    python -m scripts.sombra_v2 retro [--disease ID ...]
-    python -m scripts.sombra_v2 emite [--disease ID ...]
-    python -m scripts.sombra_v2 valida EMISION_ID
+    python -m scripts.sombra_v2 [--politica sombra_v3] retro [--disease ID ...]
+    python -m scripts.sombra_v2 [--politica sombra_v3] emite [--disease ID ...]
+    python -m scripts.sombra_v2 [--politica sombra_v3] valida EMISION_ID
 
-La emisión vive en runs/sombra_v2/<emision>/ y su índice de hashes en docs/sombra_v2/emisiones/.
+La emisión vive en runs/<política>/<emision>/ y su índice de hashes en docs/<política>/emisiones/.
 La validación sólo cuenta semanas posteriores al origen de cada padecimiento con verdad completa.
 """
 
@@ -53,8 +53,10 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(nombre)
         p.add_argument("--disease", action="append", help="por defecto, todos los publicados")
     sub.add_parser("valida").add_argument("emision")
+    ap.add_argument("--politica", default="sombra_v2", help="config/sombra/<política>.yaml")
     args = ap.parse_args(argv)
-    reglas, catalog = sv.cargar_reglas(), load_geo_catalog()
+    ruta = _ROOT / "config" / "sombra" / f"{args.politica}.yaml"
+    reglas, catalog = sv.cargar_reglas(ruta), load_geo_catalog()
 
     if args.cmd == "valida":
         df = flujo.validar(args.emision, catalog, reglas, _ROOT)
@@ -92,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
             filas.append({"disease_id": d} | f)
         print(d, flush=True)
     df = pd.DataFrame(filas)
-    destino = _ROOT / "runs" / "sombra_v2" / "retro.csv"
+    destino = _ROOT / "runs" / reglas.nombre / "retro.csv"
     destino.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(destino, index=False)
     print(json.dumps(_resumen_retro(df), ensure_ascii=False, indent=1))

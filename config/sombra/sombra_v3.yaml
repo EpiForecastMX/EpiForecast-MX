@@ -1,0 +1,52 @@
+# Política v3 EN SOMBRA (22-nov-2026). Corre en paralelo a lo publicado y a la v2; NO publica.
+#
+# Igual que la v2 (selección consciente del nacional con margen y mayoría, intervalos por cuantiles
+# del residuo log1p), pero con más candidatos, tomados del banco ampliado de motores
+# (docs/BANCO_AMPLIADO.md). Las predicciones de desarrollo salen del banco
+# (runs/banco_ampliado/v1/tareas), que sólo pronosticó los años de desarrollo de cada política.
+# Un motor con alguna serie fallida en un padecimiento no compite en ese padecimiento.
+#
+# Candidatos añadidos a los de la v2:
+#   - por orden del autor: media de 52 semanas, ETS amortiguado y TSB;
+#   - por el banco (criterio aplicado después de ver sus resultados de desarrollo, declarado así):
+#     mediana frente al naive ≤ −10 % y le gana al naive en al menos 2/3 de los padecimientos donde
+#     corre: top-down ETS nacional, nivel × perfil estacional, las dos combinaciones de los tres
+#     mejores y las medias de 26 y 13 semanas.
+version: 1
+name: sombra_v3
+fuente_desarrollo: banco
+
+candidatos:
+  - naive_lag52
+  - media_2y
+  - media_3y
+  - mediana_3y
+  - media_5y
+  - mediana_5y
+  - media_52s
+  - ets_amortiguado_log1p
+  - tsb
+  - topdown_ets_nacional
+  - nivel_x_perfil_5y
+  - combo_media_top3
+  - combo_mediana_top3
+  - media_26s
+  - media_13s
+control: naive_lag52
+
+seleccion:
+  metrica: smape_nacional_general
+  agregado: mean
+  margen_minimo_pct: 5.0
+  mayoria_pliegues: true
+  desempate: [smape_bases, engine]
+
+intervalos:
+  metodo: cuantil_residuo_log1p
+  niveles: [80, 95]
+  # Recalibración en desarrollo: con los motores suavizados, los cuantiles nominales cubrieron
+  # 71 % y 87 % en la retroprueba; cada banda usa un cuantil más amplio del residuo.
+  cuantil_por_nivel: {80: 90, 95: 99}
+  min_residuos: 52
+
+horizonte: 52

@@ -1,7 +1,7 @@
-# Banco ampliado de motores (23-nov-2026)
+# Banco ampliado de motores (22-nov-2026)
 
-Pregunta del autor: ¿le ganamos al naive estacional y a los métodos simples? Se corrieron **19
-motores en los 148 padecimientos del runner**, sólo en los pliegues de desarrollo de la política de
+Pregunta del autor: ¿le ganamos al naive estacional y a los métodos simples? Se corrieron **30
+motores (19 en la ronda 1 y 11 en la ronda 2) en los 148 padecimientos del runner**, sólo en los pliegues de desarrollo de la política de
 cada uno (2021–2024; 2025 en historia corta). Ningún año de prueba se pronostica ni se mide. No
 selecciona ni publica: es comparación.
 
@@ -9,7 +9,7 @@ Configuración: `config/banco/banco_ampliado_v1.yaml`. Código: `src/epiforecast
 locales en `runs/banco_ampliado/v1/` (`motor_fijo.csv`, `metricas.csv`, `resumen.json`).
 
 ```bash
-make banco-corre      # 2812 tareas, unos 15 min con 11 procesos
+make banco-corre      # 4440 tareas; ronda 1 unos 15 min y ronda 2 unos 25 min con 11 procesos
 make banco-reporte
 ```
 
@@ -65,3 +65,32 @@ ganan a los simples en 58 de 114: una moneda al aire.
    el último valor, el mismo sesgo que hunde el nacional.
 4. Siguiente paso sugerido (requiere autorización): probar en la sombra v2 la media de 52 semanas,
    ETS y TSB como candidatos, medidos sólo en semanas de 2026 no vistas.
+
+## Ronda 2 (22-nov-2026): once motores más
+
+| Motor | Clase | Mediana | vs naive (mediana) | Le gana al naive | Pierde > 10 % |
+|---|---|---|---|---|---|
+| top-down ETS (ETS sobre el nacional, repartido por proporción de 104 sem) | jerárquico | **27.55** | −16.3 % | 109 / 138 | 19 |
+| nivel × perfil estacional de 5 años (encogido a la mitad) | ajuste de nivel | 28.91 | **−20.4 %** | **129 / 148** | **14** |
+| media de media 52 sem, ETS y TSB | combinación | 29.12 | −17.7 % | 115 / 138 | 14 |
+| mediana de los mismos tres | combinación | 29.71 | −15.2 % | 109 / 138 | 15 |
+| GLM binomial negativo con Fourier | estadístico | 29.72 | −4.4 % | 58 / 103 | 36 |
+| media de 26 semanas | simple | 30.29 | −17.4 % | 115 / 148 | 23 |
+| STL + ETS | estadístico | 31.55 | −6.9 % | 103 / 138 | 20 |
+| media de 13 semanas | simple | 32.24 | −13.2 % | 104 / 148 | 33 |
+| SES optimizado | estadístico | 39.32 | −5.1 % | 84 / 148 | 46 |
+| mediana de 52 semanas | simple | 50.38 | +26.1 % | 42 / 148 | 92 |
+
+El top-down con la media de 52 semanas da exactamente el mismo nacional que la media de 52 semanas
+(la suma de medias es la media de las sumas): sirve de comprobación. La binomial negativa no
+converge en 45 padecimientos.
+
+Con los 30 motores, la selección honesta por ventana creciente mejora: entre todos, mediana 26.73
+frente a 28.30 del naive (gana en 67 de 114 y pierde más de 10 % en 20); sólo complejos 26.99; sólo
+simples 27.92. Ahora los complejos le ganan a los simples en 72 de 114.
+
+**Lectura de la ronda 2.** Lo que funciona es separar el nivel de la estacionalidad y pronosticar el
+nacional directamente: estimar el nivel con el último año y aplicarle un perfil estacional encogido,
+o ajustar ETS sobre la serie nacional y repartirla. Ambos le ganan al naive en la gran mayoría de los
+padecimientos y casi nunca pierden por mucho. Los mejores pasan a la sombra v3
+(`docs/SOMBRA_V2.md`).

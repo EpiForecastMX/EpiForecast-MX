@@ -70,3 +70,31 @@ todas las bases, y compara en esas mismas semanas la sombra, el pronóstico publ
 Ninguno se decide aquí: proponer el cambio requiere autorización del autor. Como guía, tras al menos
 8 semanas observadas: la sombra debería no empeorar el sMAPE nacional mediano frente a lo publicado y
 la cobertura empírica debería quedar cerca de la nominal (80 y 95 %).
+
+## Sombra v3 (22-nov-2026): más candidatos desde el banco ampliado
+
+Misma regla que la v2 (un motor por padecimiento, el control sólo cede con mejora de 5 % y
+mayoritaria), con predicciones de desarrollo del banco (`config/sombra/sombra_v3.yaml`). Candidatos:
+los de la v2 más la media de 52 semanas, ETS y TSB (orden del autor) y los mejores del banco:
+top-down ETS nacional, nivel × perfil estacional, las dos combinaciones de los tres mejores y las
+medias de 26 y 13 semanas. Ese criterio (mediana frente al naive ≤ −10 % y ganarle en al menos 2/3)
+se aplicó después de ver los resultados de desarrollo del banco; por eso sólo cuenta la validación
+prospectiva.
+
+Retroprueba en desarrollo (ventana creciente, 114 padecimientos): mediana 25.92 frente a 28.30 del
+control; le gana al control en 75 y queda dentro del 10 % en 98 (v2: 40 y 89). Con los cuantiles
+nominales los intervalos cubrían 71 % y 87 %: los motores suavizados no copian los cambios de nivel
+entre años. Se recalibró en desarrollo (banda 80 con el cuantil 90 y banda 95 con el 99): cobertura
+81.3 % y 93.0 %, y 83.7 % y 95.2 % en el pliegue más reciente. La v2 reprodujo su emisión byte a byte
+con el código nuevo.
+
+Emisión congelada `sombra_v3_20261122_c0f26063ce`: 22-nov-2026 a las 07:46 UTC (02:46 en hora del
+este), commit `2e5ddf92`, configuración `c5f35a01…`, índice `21081465…`. Origen W43 en 125 y W44 en
+23. Motores: top-down ETS 26, nivel × perfil 26, media 26 sem 17, control 16, media 13 sem 14,
+combinación media 10, media 52 sem 10, ETS 9, mediana 5 años 6, TSB 5, combinación mediana 5,
+mediana 3 años 3, media 5 años 1.
+
+```bash
+make sombra-valida EMISION=sombra_v2_20261122_4ba61a03dc
+python -m scripts.sombra_v2 --politica sombra_v3 valida sombra_v3_20261122_c0f26063ce
+```

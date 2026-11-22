@@ -2,8 +2,8 @@
 
 Lee sólo lo ya sellado: el benchmark de desarrollo del release público (``runs/<benchmark>``), la
 observación vigente (``artifacts/observations``) y el pronóstico publicado. Escribe la emisión en
-``runs/sombra_v2/<emision>/`` (sin versionar, por tamaño) y su índice de hashes en
-``docs/sombra_v2/emisiones/`` (versionado: el commit fecha la emisión antes de la verdad).
+``runs/<política>/<emision>/`` (sin versionar, por tamaño) y su índice de hashes en
+``docs/<política>/emisiones/`` (versionado: el commit fecha la emisión antes de la verdad).
 """
 
 from __future__ import annotations
@@ -28,7 +28,8 @@ from epiforecast.runner import sombra_v2 as sv
 from epiforecast.runner.evaluation import smape_percent
 
 _ROOT = Path(__file__).resolve().parents[3]
-SCHEMA = "sombra_v2_emision.v1"
+SCHEMA = "sombra_v2_emision.v1"  # mismo esquema para v2 y v3
+BANCO = _ROOT / "runs" / "banco_ampliado" / "v1" / "tareas"
 _EV_COLS = [
     "engine",
     "fold",
@@ -67,9 +68,39 @@ def _anios_prueba(rel: Path) -> set[int]:
     return {int(f["epi_year"]) for f in folds.get("test") or []}
 
 
+def _desarrollo_banco(disease: str, reglas: sv.Reglas, root: Path) -> pd.DataFrame:
+    """Predicciones de desarrollo del banco ampliado; un motor con series fallidas no compite."""
+    base = root / BANCO.relative_to(_ROOT)
+    frames = []
+    for engine in reglas.candidatos:
+        info_f = base / f"{disease}__{engine}.json"
+        if not info_f.is_file():
+            continue
+        if _json(info_f)["fallos"]:
+            continue
+        csv = base / f"{disease}__{engine}.csv.gz"  # formato portátil, sin pyarrow
+        if csv.is_file():
+            df = pd.read_csv(csv, dtype={"geography_id": str})
+        else:
+            df = pd.read_parquet(base / f"{disease}__{engine}.parquet")
+        frames.append(
+            df.rename(columns={"y_true": "y_true_cases", "y_pred": "y_pred_cases"}).assign(
+                engine=engine, fold=lambda d: "development_" + d["fold"].astype(str)
+            )
+        )
+    if not frames:
+        raise sv.SombraError(f"{disease}: sin predicciones del banco en {base}")
+    return pd.concat(frames, ignore_index=True)
+
+
 def desarrollo(disease: str, reglas: sv.Reglas, root: Path = _ROOT) -> pd.DataFrame:
-    """Filas base de desarrollo del benchmark sellado. Falla cerrado ante un año de prueba."""
+    """Filas base de desarrollo (benchmark sellado o banco). Falla cerrado ante un año de prueba."""
     rel = release_dir(disease, root)
+    if reglas.fuente == "banco":
+        ev = _desarrollo_banco(disease, reglas, root)
+        if set(ev["epi_year"]) & _anios_prueba(rel):
+            raise sv.SombraError(f"{disease}: el banco contiene años de prueba")
+        return ev[ev["sex"].isin(base_sexes_of(ev["sex"].unique()))]
     prov = _json(rel / "selection" / "acceptance.json")["provenance"]
     bdir = root / "runs" / str(prov["benchmark_run_id"]) / "artifacts"
     prueba = _anios_prueba(rel)
@@ -140,7 +171,7 @@ def emitir(
 ) -> dict[str, Any]:
     """Una emisión congelada por padecimiento; nunca sobrescribe una emisión previa."""
     ahora = datetime.now(UTC)
-    staging = root / "runs" / "sombra_v2" / f"_staging_{ahora:%Y%m%dT%H%M%S}"
+    staging = root / "runs" / reglas.nombre / f"_staging_{ahora:%Y%m%dT%H%M%S}"
     staging.mkdir(parents=True, exist_ok=False)
     entradas = []
     for d in diseases:
@@ -169,20 +200,21 @@ def emitir(
             flush=True,
         )
     huella = hashlib.sha256("".join(e["forecast_sha256"] for e in entradas).encode()).hexdigest()
-    eid = f"sombra_v2_{ahora:%Y%m%d}_{huella[:10]}"
+    eid = f"{reglas.nombre}_{ahora:%Y%m%d}_{huella[:10]}"
     indice = {
         "schema": SCHEMA,
         "emision_id": eid,
         "emitida_utc": ahora.isoformat(),
         "code_commit": _commit(root),
-        "config_sha256": _sha(sv.CONFIG),
+        "config_sha256": _sha(Path(reglas.ruta)),
+        "fuente_desarrollo": reglas.fuente,
         "padecimientos": entradas,
     }
-    destino_dir = root / "runs" / "sombra_v2" / eid
+    destino_dir = root / "runs" / reglas.nombre / eid
     staging.rename(destino_dir)  # falla si la emisión ya existía
     texto = json.dumps(indice, ensure_ascii=False, indent=1) + "\n"
     (destino_dir / "emision.json").write_text(texto, encoding="utf-8")
-    doc = root / "docs" / "sombra_v2" / "emisiones" / f"{eid}.json"
+    doc = root / "docs" / reglas.nombre / "emisiones" / f"{eid}.json"
     doc.parent.mkdir(parents=True, exist_ok=True)
     doc.write_text(texto, encoding="utf-8")
     return indice
@@ -190,7 +222,7 @@ def emitir(
 
 def validar(eid: str, catalog: GeoCatalog, reglas: sv.Reglas, root: Path = _ROOT) -> pd.DataFrame:
     """Compara sombra, publicado y control en semanas posteriores al origen con verdad completa."""
-    edir = root / "runs" / "sombra_v2" / eid
+    edir = root / "runs" / reglas.nombre / eid
     indice = _json(edir / "emision.json")
     filas = []
     for e in indice["padecimientos"]:
