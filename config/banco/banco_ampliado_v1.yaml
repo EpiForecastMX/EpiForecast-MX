@@ -1,0 +1,59 @@
+# Banco ampliado de motores (23-nov-2026): comparación exploratoria, NO selección ni publicación.
+#
+# Pregunta: ¿algún motor más elaborado le gana al naive estacional y a los métodos simples?
+# Datos: la observación vigente de cada padecimiento, recortada a la historia estrictamente previa
+# a cada pliegue de DESARROLLO de su política (los mismos años que usó su benchmark sellado). Los
+# años de prueba de la política (2025, o 2026 en historia corta) nunca se pronostican ni se miden.
+#
+# Diferencias declaradas con los motores del runner: aquí un pronóstico negativo se recorta a cero
+# y se cuenta (el runner falla cerrado); un pronóstico no finito marca la serie como fallida y el
+# motor queda fuera del nacional de ese padecimiento. Los nombres llevan prefijo propio para no
+# confundirlos con los motores sellados.
+version: 1
+name: banco_ampliado_v1
+
+clases:
+  simple:
+    - naive_lag52 # misma semana del año anterior (el control)
+    - media_3y # media de la misma semana en 3 años previos
+    - mediana_3y
+    - media_5y
+    - mediana_5y
+    - media_2y
+    - media_52s # media de las últimas 52 semanas, plana
+    - ultimo_valor # último valor observado, plano
+  combinacion_simple:
+    - promedio_estacionales # media de naive, media/mediana 3y y 5y
+  ajuste_nivel:
+    - naive_nivel_13s # naive × (últimas 13 sem / mismas 13 sem un año antes), acotado
+    - media_3y_nivel_13s
+  estadistico:
+    - ets_amortiguado_log1p # Holt-Winters aditivo amortiguado, estacionalidad 52, sobre log1p
+    - theta_log1p # Theta estándar con desestacionalización aditiva, periodo 52
+    - ridge_fourier_log1p # tendencia + Fourier K=4, alpha=1
+    - poisson_fourier # GLM Poisson con tendencia + Fourier K=4 (conteos)
+    - croston_sba # demanda intermitente (Syntetos-Boylan), plano
+    - tsb # Teunter-Syntetos-Babai, plano
+    - prophet_log1p # MAP, configuración congelada del runner (additive, cp 0.01, sp 0.5, F=5)
+  ml:
+    - lgbm_global_directo # LightGBM global por padecimiento, directo (sin recursión)
+
+parametros:
+  nivel_ventana: 13
+  nivel_limites: [0.5, 2.0] # el factor de nivel se acota a este rango
+  fourier_k: 4
+  ridge_alpha: 1.0
+  poisson_alpha: 0.0001
+  croston_alpha: 0.1
+  tsb_alpha: 0.1
+  tsb_beta: 0.1
+  lgbm:
+    n_estimators: 300
+    learning_rate: 0.05
+    num_leaves: 15
+    min_child_samples: 20
+    origenes_cada: 4 # orígenes de entrenamiento cada 4 semanas en los 3 años previos al pliegue
+    anios_origenes: 3
+    seed: 20261123
+
+control: naive_lag52

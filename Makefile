@@ -409,6 +409,16 @@ model-pipeline: train models-push predict report forecast-push
 sync-instrucciones:
 	$(PYTHON) scripts/sync_instrucciones.py
 
+## Banco ampliado: 19 motores en pliegues de desarrollo (no selecciona ni publica)
+.PHONY: banco-corre
+banco-corre:
+	$(PYTHON) -m scripts.banco_ampliado corre
+
+## Banco ampliado: informe frente al naive y a los simples
+.PHONY: banco-reporte
+banco-reporte:
+	$(PYTHON) -m scripts.banco_ampliado reporte
+
 ## Política v2 en sombra: retroprueba en desarrollo (no publica ni reentrena)
 .PHONY: sombra-retro
 sombra-retro:

@@ -28,6 +28,13 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Banco ampliado de motores — 23-nov-2026
+
+19 motores en los 148 del runner, sólo en pliegues de desarrollo (sin años de prueba, sin publicar):
+la media de las últimas 52 semanas le gana al naive en 120/148 (mediana −14.9 %); ETS y TSB quedan
+a la par; Prophet, Ridge, Theta y LightGBM pierden contra el naive en la mediana. Elegir motor por
+ventana creciente apenas mejora (27.50 frente a 28.30). Detalle: `docs/BANCO_AMPLIADO.md`.
+
 ## Política v2 en sombra — 22-nov-2026
 
 Por orden del autor («si constrúyela»), la v2 corre **en sombra**: no publica, no reentrena y no toca
