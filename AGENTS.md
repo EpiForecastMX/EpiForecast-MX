@@ -30,6 +30,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 > Espejo generado de `CLAUDE.md`: no editar aquí. Editar `CLAUDE.md` y correr `make sync-instrucciones`.
 
+## Expediente COMIA 2027 y búsqueda anidada — 22-nov-2026
+
+Por orden del autor se auditó el banco con una mesa de cuatro expertos, se corrió una búsqueda
+anidada con Optuna (sólo años de desarrollo; la historia se trunca antes de los años de prueba) y se
+preparó el expediente del artículo para COMIA 2027: `docs/paper_comia2027/README.md` (cifras
+citables con su archivo, lo que no se puede afirmar, amenazas y pendientes). Hallazgo principal:
+nivel × perfil global le gana al naive 13.6 % en años externos; el ajuste por padecimiento
+sobreajusta. 97 de 148 publicados del runner son el control: presentar «cobertura con gobierno», no
+«validación». Regenerar con `make banco-estadistica`, `make banco-optuna` y `make paper-comia` (exige
+árbol limpio). Nada de esto publica, reentrena ni toca releases.
+
 ## Banco ampliado y sombra v3 — 22-nov-2026
 
 Banco de 30 motores en los 148 del runner, sólo en pliegues de desarrollo (sin años de prueba, sin

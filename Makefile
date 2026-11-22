@@ -419,6 +419,25 @@ banco-corre:
 banco-reporte:
 	$(PYTHON) -m scripts.banco_ampliado reporte
 
+## Pruebas estadísticas del banco (Wilcoxon + Holm, Friedman/Nemenyi, Diebold-Mariano)
+.PHONY: banco-estadistica
+banco-estadistica:
+	$(PYTHON) -m scripts.banco_estadistica
+
+## Búsqueda anidada con Optuna (requiere pip install -e ".[tuning]")
+.PHONY: banco-optuna
+banco-optuna:
+	$(PYTHON) -m scripts.banco_optuna datos
+	$(PYTHON) -m scripts.banco_optuna busca --trials 500 --alcance global
+	$(PYTHON) -m scripts.banco_optuna busca --trials 100 --alcance padecimiento
+	$(PYTHON) -m scripts.banco_optuna evalua
+
+## Evidencia de MLOps y paquete reproducible del artículo de COMIA 2027
+.PHONY: paper-comia
+paper-comia:
+	$(PYTHON) -m scripts.paper_comia_evidencia
+	$(PYTHON) -m scripts.paper_comia_paquete
+
 ## Política v2 en sombra: retroprueba en desarrollo (no publica ni reentrena)
 .PHONY: sombra-retro
 sombra-retro:

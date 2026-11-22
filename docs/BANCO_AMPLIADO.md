@@ -94,3 +94,15 @@ nacional directamente: estimar el nivel con el último año y aplicarle un perfi
 o ajustar ETS sobre la serie nacional y repartirla. Ambos le ganan al naive en la gran mayoría de los
 padecimientos y casi nunca pierden por mucho. Los mejores pasan a la sombra v3
 (`docs/SOMBRA_V2.md`).
+
+## Auditoría con mesa de expertos y búsqueda anidada (22-nov-2026)
+
+Cuatro dictámenes independientes (estadística, ajuste de hiperparámetros, epidemiología y MLOps)
+revisaron el banco. Cambios: comparaciones emparejadas por pliegue sobre la intersección común,
+familias de Holm confirmatoria (ronda 1) y exploratoria (ronda 2), WAPE de bases además del sMAPE,
+resultados por año y por estrato, y Diebold-Mariano retirado. La búsqueda con Optuna es una CV
+anidada (años externos 2023 y 2024, más transferencia a historia corta) que nunca carga los años de
+prueba. Resultado principal: nivel × perfil con una configuración global estable le gana al naive
+13.6 % en los años externos; ajustar por padecimiento sobreajusta y no mejora al global. Comandos:
+`make banco-estadistica` y `make banco-optuna`. Expediente completo, cifras citables y pendientes:
+`docs/paper_comia2027/README.md`.
