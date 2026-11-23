@@ -1,0 +1,59 @@
+{
+ "elegidas_por_externo": {
+  "2023": "comb4|ent",
+  "2024": "comb4|ent",
+  "transferencia": "f4|ent"
+ },
+ "anidado": {
+  "aceptados": {
+   "padecimientos": 51,
+   "rescatados": 43,
+   "pasan_sin_mejora": 0,
+   "no_pasan": 8,
+   "pliegues_externos": 87,
+   "pliegues_pasan": 78,
+   "pliegues_positivos": 72,
+   "mejora_nacional_mediana_pct": -10.555398231218792,
+   "peor_bases_mediana_pct": 0.0,
+   "peor_all_mediana_pct": -0.12701396100606066
+  },
+  "controles": {
+   "padecimientos": 97,
+   "rescatados": 73,
+   "pasan_sin_mejora": 7,
+   "no_pasan": 17,
+   "pliegues_externos": 175,
+   "pliegues_pasan": 148,
+   "pliegues_positivos": 132,
+   "mejora_nacional_mediana_pct": -10.209627227226038,
+   "peor_bases_mediana_pct": 0.0,
+   "peor_all_mediana_pct": 0.0
+  }
+ },
+ "fijo": {
+  "aceptados": {
+   "padecimientos": 51,
+   "rescatados": 47,
+   "pasan_sin_mejora": 2,
+   "no_pasan": 2,
+   "pliegues_externos": 87,
+   "pliegues_pasan": 85,
+   "pliegues_positivos": 76,
+   "mejora_nacional_mediana_pct": -9.410763069293958,
+   "peor_bases_mediana_pct": -0.2342067555451395,
+   "peor_all_mediana_pct": -0.12170563844879394
+  },
+  "controles": {
+   "padecimientos": 97,
+   "rescatados": 80,
+   "pasan_sin_mejora": 5,
+   "no_pasan": 12,
+   "pliegues_externos": 175,
+   "pliegues_pasan": 154,
+   "pliegues_positivos": 144,
+   "mejora_nacional_mediana_pct": -13.177434927806491,
+   "peor_bases_mediana_pct": 0.0,
+   "peor_all_mediana_pct": 0.0
+  }
+ }
+}

@@ -443,6 +443,12 @@ paper-comia:
 	$(PYTHON) -m scripts.paper_comia_evidencia
 	$(PYTHON) -m scripts.paper_comia_paquete
 
+## Rescate de controles: compuerta completa del naive coherente en desarrollo (no publica)
+.PHONY: banco-rescate
+banco-rescate:
+	$(PYTHON) -m scripts.banco_ampliado corre --motor naive_coherente_f4
+	$(PYTHON) -m scripts.banco_rescate
+
 ## Política v2 en sombra: retroprueba en desarrollo (no publica ni reentrena)
 .PHONY: sombra-retro
 sombra-retro:

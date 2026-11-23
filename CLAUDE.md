@@ -28,6 +28,21 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Rescate de los controles: naive coherente y sombra v4 — 22-nov-2026
+
+Por orden del autor se buscó cómo meter los 97 publicados sólo con el control. Mesa de cuatro expertos
+y banco de rescate con la compuerta completa (nacional, bases y 111 productos) sólo en años de
+desarrollo. Método: **naive coherente** (`src/epiforecast/banco/coherente.py`): bases = naive lag 52,
+forma nacional = mediana de formas de naive, nivel × perfil, ETS y media 3 años al nivel de 52 sem,
+reparto semanal multiplicativo acotado (los ceros siguen en cero) y redondeo controlado. Rescatados en
+desarrollo, con la regla exacta del runner: **73/97 con selección anidada, 80/97 con la variante fija
+f4** (elegida tras ver esos años); diez no pueden pasar con ningún método (control en 0). Mejora el
+nacional sin mover las bases. Sombra congelada `sombra_v4_20261122_7c5f823426`; validar con
+`python -m scripts.sombra_v2 --politica sombra_v4 valida …` y no re-emitir. Adoptarla requiere
+autorización del autor; 2025 sigue consumido. Las 33 sin pronóstico no son problema de técnica (sin
+datos estatales, sin casos o sin un año completo). Guía: `docs/RESCATE_CONTROLES.md`;
+`make banco-rescate`.
+
 ## Expediente COMIA 2027 y búsqueda anidada — 22-nov-2026
 
 Por orden del autor se auditó el banco con una mesa de cuatro expertos, se corrió una búsqueda

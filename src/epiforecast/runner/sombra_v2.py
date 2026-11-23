@@ -51,6 +51,7 @@ class Reglas:
     fuente: str = "benchmark"  # de dónde salen las predicciones de desarrollo: benchmark | banco
     ruta: str = ""  # archivo de configuración (su SHA-256 viaja en el índice de la emisión)
     cuantil_de: tuple[float, ...] = ()  # nivel de cuantil usado por banda; vacío = el nominal
+    fijo: str = ""  # motor único para todos los padecimientos (sin selección); vacío = selección
 
 
 def cargar_reglas(path: Path = CONFIG) -> Reglas:
@@ -64,6 +65,8 @@ def cargar_reglas(path: Path = CONFIG) -> Reglas:
         raise SombraError(f"fuente de desarrollo no soportada: {raw['fuente_desarrollo']}")
     if raw["control"] not in raw["candidatos"]:
         raise SombraError("el control debe estar entre los candidatos")
+    if sel.get("fijo") and sel["fijo"] not in raw["candidatos"]:
+        raise SombraError("el motor fijo debe estar entre los candidatos")
     return Reglas(
         candidatos=tuple(raw["candidatos"]),
         control=str(raw["control"]),
@@ -78,6 +81,7 @@ def cargar_reglas(path: Path = CONFIG) -> Reglas:
         cuantil_de=tuple(
             float(itv.get("cuantil_por_nivel", {}).get(n, n)) for n in itv["niveles"]
         ),
+        fijo=str(sel.get("fijo") or ""),
     )
 
 
@@ -143,7 +147,11 @@ def seleccionar(met: pd.DataFrame, reglas: Reglas) -> dict[str, Any]:
     nac = met.pivot(index="fold", columns="engine", values="smape_nacional_general")
     ctrl = nac_media[reglas.control]
     elegibles = [reglas.control]
-    for e in media.index:
+    if reglas.fijo:
+        if reglas.fijo not in nac_media:
+            raise SombraError(f"el desarrollo no evaluó el motor fijo {reglas.fijo}")
+        elegibles = [reglas.fijo]
+    for e in media.index if not reglas.fijo else []:
         if e == reglas.control:
             continue
         mejora = (ctrl - nac_media[e]) / max(ctrl, 1e-12) * 100
@@ -252,6 +260,9 @@ def evaluar(
     ]:
         out[f"smape_nacional_{nombre}"] = smape_percent(nac["y_true_cases"], nac[col])
         out[f"smape_bases_{nombre}"] = _mediana_bases(bases, col)
+        out[f"smape_all_{nombre}"] = float(
+            np.median([smape_percent(g["y_true_cases"], g[col]) for _, g in m.groupby(LLAVE)])
+        )
     for n in niveles:
         dentro = (m["y_true_cases"] >= m[f"lower_{n}"]) & (m["y_true_cases"] <= m[f"upper_{n}"])
         en_nac = (nac["y_true_cases"] >= nac[f"lower_{n}"]) & (

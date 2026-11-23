@@ -98,3 +98,23 @@ mediana 3 años 3, media 5 años 1.
 make sombra-valida EMISION=sombra_v2_20261122_4ba61a03dc
 python -m scripts.sombra_v2 --politica sombra_v3 valida sombra_v3_20261122_c0f26063ce
 ```
+
+## Sombra v4 (22-nov-2026): naive coherente, motor único
+
+Rescate de los 97 controles (`docs/RESCATE_CONTROLES.md`). Sin selección por padecimiento
+(`seleccion.fijo: naive_coherente_f4` en `config/sombra/sombra_v4.yaml`): las bases son el naive
+lag 52, la forma del nacional sale de la mediana de formas de cuatro miembros y se reparte con un
+factor semanal común acotado, con redondeo controlado a enteros. En desarrollo pasa la compuerta
+completa y mejora el nacional en 80 de los 97 controles (73 con selección anidada; diez no
+pueden pasar con ningún método porque su control vale 0 en bases o productos). Retroprueba:
+mediana nacional 24.36 frente a 28.30 del control; cobertura 82.3 % y 93.9 % con cuantiles
+nominales. La validación de todas las sombras reporta ahora también `smape_all_*` (mediana de los
+111 productos).
+
+Emisión congelada `sombra_v4_20261122_7c5f823426`: 22-nov-2026 a las 23:37 UTC (18:37 en hora del
+este), commit `365527c1`, configuración `974be1d4…`, índice `7932ba00…`. Origen W43 en 125 y W44 en
+23.
+
+```bash
+python -m scripts.sombra_v2 --politica sombra_v4 valida sombra_v4_20261122_7c5f823426
+```
