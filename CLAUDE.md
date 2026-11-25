@@ -28,6 +28,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Sitio y EpiBot (repositorio Dashboard): checkpoint 24/25-nov-2026
+
+En `EpiForecast-IMSS-Dashboard`, **lo servido** (sitio y EpiBot) es el PR #112 (`edbff2c`); **integrados y sin desplegar**,
+los PR #113 a #131 (`main` `01604977`): no hay despliegues desde el 24-nov-2026 y, según el autor, Netlify no tendrá
+servicio hasta el 1-dic-2026. Incluyen el EpiBot conversacional y agéntico (calculadora determinista, preguntas compuestas,
+planificador detrás de `?agente=1`, verificador de cifras e interruptor ante el 402 de la API de Gemini), el sistema común
+de gráficas, la galería con tema oscuro y las áreas clínicas con iconos. Reglas para agentes: sección «EpiBot y sitio:
+checkpoint 24/25-nov-2026» del `CLAUDE.md` del Dashboard. Del lado del backend, el cambio de este tema fue el PR #104
+(`7cedf8f4`): los cuatro generadores de páginas emiten `<meta name="color-scheme" content="only light">`. Actas y evidencia:
+`/Users/haowei/Documents/Integrador/planes/mesa_*_2026-11-2*/` (carpeta del espacio de trabajo, fuera de los repositorios).
+
 ## Rescate de los controles: naive coherente y sombra v4 — 22-nov-2026
 
 Por orden del autor se buscó cómo meter los 97 publicados sólo con el control. Mesa de cuatro expertos
