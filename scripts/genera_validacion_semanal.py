@@ -590,6 +590,7 @@ def _generate_html(seg: pd.DataFrame, corte: tuple[int, int], resumen: dict[str,
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="only light">
 <title>Seguimiento posterior al corte - Semana {ultima[1]}/{ultima[0]}</title>
 {_FONTS_LINK}
 <style>{css}{_CSS_EXTRA}</style>
