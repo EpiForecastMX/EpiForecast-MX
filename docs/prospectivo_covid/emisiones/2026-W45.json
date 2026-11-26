@@ -1,0 +1,42 @@
+{
+ "schema": "emision_referencias.v1",
+ "disease_id": "covid_19",
+ "origen": [
+  2026,
+  45
+ ],
+ "dato_ultimo": 45,
+ "objetivos": [
+  [
+   2026,
+   46
+  ],
+  [
+   2026,
+   47
+  ],
+  [
+   2026,
+   48
+  ],
+  [
+   2026,
+   49
+  ]
+ ],
+ "ultimo": [
+  45,
+  45,
+  45,
+  45
+ ],
+ "lag52": [
+  29.0,
+  45.0,
+  32.0,
+  25.0
+ ],
+ "raw_sha256": "f5350ae3b0477a7e723b91642078dbb2bc448cafcac46e7038780d315d7fb598",
+ "dataset_id": "covid_19_7f167a17e097",
+ "nota": "Emitido antes de recibir el boletín 46. El dato de W45 puede revisarse; se conserva tal cual."
+}
