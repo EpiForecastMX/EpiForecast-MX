@@ -1,0 +1,6 @@
+outs:
+- md5: 92c06a45f617a0aaf726be60339f7b84.dir
+  size: 5974908
+  nfiles: 20
+  hash: md5
+  path: cancer_prostata_c61_931f9139497f

@@ -1,0 +1,6 @@
+outs:
+- md5: 231e4c96915de8a65c3c9f60d393e422.dir
+  size: 11861289
+  nfiles: 20
+  hash: md5
+  path: cancer_higado_c22_df4a520c9c74

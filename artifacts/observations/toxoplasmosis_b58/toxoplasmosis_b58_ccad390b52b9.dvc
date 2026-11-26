@@ -1,0 +1,6 @@
+outs:
+- md5: b64aa9081b19d81f0e82f7f01c7a6454.dir
+  size: 33263367
+  nfiles: 20
+  hash: md5
+  path: toxoplasmosis_b58_ccad390b52b9

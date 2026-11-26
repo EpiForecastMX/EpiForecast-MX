@@ -1,0 +1,6 @@
+outs:
+- md5: 13f3c0747b51944b92ad80928d40b3d5.dir
+  size: 11175664
+  nfiles: 20
+  hash: md5
+  path: cancer_colon_c18_2523ed0a303f
