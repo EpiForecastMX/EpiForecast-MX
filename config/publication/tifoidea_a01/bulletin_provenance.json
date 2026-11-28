@@ -19,6 +19,26 @@
         "modified_utc": "2026-11-13T23:21:06+00:00"
       },
       "sha256": "c6b328e4a88c293cbd9b912403b14f8e8a27ab54b780566fc51537b03b52d1a3"
+    },
+    {
+      "after_emission": {
+        "captured": true,
+        "created": true,
+        "first_available": true
+      },
+      "bytes": 2389831,
+      "captured_utc": "2026-11-26T06:59:04.928566+00:00",
+      "first_available_evidence": "Primera captura verificable: descarga del CI (data/registry.json, commit a0ab94b5, downloaded_at); PDF45 sha256 285d5450a6e828dac9ff119516a8ed2eb6b3a2d1ce120ffd76b6ac653d32ea7a; evidencia /Users/haowei/Documents/Integrador/planes/boletin_2026_sem45_2026-11-26/fuente/DISPONIBILIDAD.json; CreationDate y Last-Modified (23-nov) no equivalen a disponibilidad",
+      "first_available_utc": "2026-11-25T03:21:57.639518+00:00",
+      "name": "2026_sem45.pdf",
+      "pdf_metadata": {
+        "created_raw": "D:20261123115220-06'00'",
+        "created_utc": "2026-11-23T17:52:20+00:00",
+        "error": null,
+        "modified_raw": "D:20261123115220-06'00'",
+        "modified_utc": "2026-11-23T17:52:20+00:00"
+      },
+      "sha256": "285d5450a6e828dac9ff119516a8ed2eb6b3a2d1ce120ffd76b6ac653d32ea7a"
     }
   ],
   "disease_id": "tifoidea_a01",
