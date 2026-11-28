@@ -28,6 +28,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Paso semanal vigente: boletín 45 integrado (28-nov-2026)
+
+Prevalece sobre la frase «El paso siguiente usa la semana fuente 45» del checkpoint alta_b44. El boletín 45
+(`2026_sem45.pdf`, sha256 `285d5450…`) está integrado en ambos repositorios: backend PR #107 (`6b9ab22a`: observación
+de los 148 del runner, 147 `INCOMPLETE` y Obesidad `PASS`, y emisión Covid-19 `2026-W45`, con las 148 observaciones en
+DVC y `dvc push` hecho) y Dashboard PR #165 (`88c21370`: vistas W45, radar `2026-w45`, EpiBot). **La base del paso
+siguiente (semana fuente 46)** es `planes/oneplus_actualizacion_2026-10-01/sesion_20261002T141558/ingestion_observado_W45/candidato_completo/`
+(sha256 `7d2679f06d48399bb4b60c30a143dec7b16516dd5245b8fdd96b258d92db8cec`). Pendiente: el índice RAG del Dashboard no
+cubre el corpus W45 porque la API de embeddings de Gemini responde 402; hasta reconstruirlo (`npm run rag:build`) falla
+`deploy:verify` y el build de Netlify falla cerrado. Estado y evidencia: `planes/boletin_2026_sem45_2026-11-26/ESTADO.md`.
+
 ## Sitio y EpiBot (repositorio Dashboard): checkpoint 24/25-nov-2026
 
 En `EpiForecast-IMSS-Dashboard`, **lo servido** (sitio y EpiBot) es el PR #112 (`edbff2c`); **integrados y sin desplegar**,
